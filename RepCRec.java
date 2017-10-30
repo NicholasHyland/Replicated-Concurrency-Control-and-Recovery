@@ -29,10 +29,11 @@ public class RepCRec {
 
   // Opens the file creating a new operation each line and adding it to all list of operations
   public static ArrayList<Operation> openFile(String fileName) throws FileNotFoundException {
-    Scanner scanner = new Scanner(new File(fileName));
+    Scanner scanner = new Scanner(new File("Tests/" + fileName));
     ArrayList<Operation> operations = new ArrayList<Operation>();
     while (scanner.hasNextLine()) {
       String operationName = scanner.nextLine();
+      operationName = operationName.replaceAll(" ", "");
       Operation operation = setOperation(operationName); // still need to create this method
       operations.add(operation);
     }
@@ -40,12 +41,11 @@ public class RepCRec {
   }
 
   public static Operation setOperation(String operationName) {
-
+    // get arguments of operation
     int start = operationName.indexOf("(");
     int end = operationName.indexOf(")");
     String[] arguments = (operationName.substring(start + 1, end)).split(","); // arguments of the operation
     int argumentsLength = arguments.length;
-
     // initialize all variables to their default
     String operationType = operationName.substring(0, start); // name of the operation
     String transactionName = null;
@@ -55,7 +55,6 @@ public class RepCRec {
     int dumpSite = 0;
     int failSite = 0;
     int recoverSite = 0;
-
     // depending on the operation type, set the corresponding variables
     switch(operationType) {
       case "begin":
@@ -93,8 +92,8 @@ public class RepCRec {
         recoverSite = Integer.parseInt(arguments[0]);
         break;
     }
-
-    Operation operation = new Operation(operationType, transactionName, variableName, value, dumpVariable, dumpSite, failSite, recoverSite);
+    // create new operation and return
+    Operation operation = new Operation(operationName, operationType, transactionName, variableName, value, dumpVariable, dumpSite, failSite, recoverSite);
     return operation;
   }
 }

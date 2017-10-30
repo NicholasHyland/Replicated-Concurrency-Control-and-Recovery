@@ -2,6 +2,7 @@
 
 public class Operation {
 
+  String operationName;
   String operationType; //required for all
   String transactionName; //required for begin, beginRO, R, W, end
   String variableName; // required for R, W,
@@ -11,7 +12,8 @@ public class Operation {
   int failSite; // required for fail(i)
   int recoverSite; // required for recover(i)
 
-  public Operation(String operationType, String transactionName, String variableName, int value, int dumpVariable, int dumpSite, int failSite, int recoverSite) {
+  public Operation(String operationName, String operationType, String transactionName, String variableName, int value, int dumpVariable, int dumpSite, int failSite, int recoverSite) {
+    this.operationName = operationName;
     this.operationType = operationType;
     this.transactionName = transactionName;
     this.variableName = variableName;
@@ -27,6 +29,7 @@ public class Operation {
   }
 
   public void printOperation() {
+    System.out.print(this.operationName + ": ");
     switch(this.operationType) {
       case "begin":
         System.out.println("Transaction " + transactionName + " begins");
