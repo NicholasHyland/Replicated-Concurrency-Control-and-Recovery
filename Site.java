@@ -21,7 +21,7 @@ public class Site {
       while (i<21){
         //add the 2 odd variables and all even variables
         if ((i%10+1)==number || (i%2)==0){
-	         this.variables.add(new Variable(i,(10*i)));	  
+	         this.variables.add(new Variable(i));	  
         }
         i++;
       }
@@ -30,7 +30,7 @@ public class Site {
     else {
       int i=2;
       while (i<21){
-        this.variables.add(new Variable(i,(10*i)));    
+        this.variables.add(new Variable(i));    
         i+=2;
       }
     }

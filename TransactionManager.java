@@ -6,6 +6,7 @@ public class TransactionManager {
 	ArrayList<Operation> operations;
 	ArrayList<Transaction> transactions;
 	ArrayList<Variable> variables;
+	ArrayList<Site> sites;
 	int runningTransactions, currentTime;
 
 
@@ -17,12 +18,13 @@ public class TransactionManager {
 	}
 
 	//initializes all 10 sites
-  	public static ArrayList<Site> initializeSites(){
-    	ArrayList<Site> sites= new ArrayList<Site>();
+  	public static void initializeSites(){
+  		sites= new ArrayList<Site>();
     	for(int i=1; i<11; i++)
     		sites.add(new Site(i));
-      	return sites;
   	}
+
+  	/*
 
 	public void simulate(){
 		Operation current;
@@ -46,11 +48,57 @@ public class TransactionManager {
 			detectDeadlock();
 			currentTime++;
 		}
+	} */
+
+	public void simulate(){
+		Operation current;
+		while (runningTransactions>0 || currentTime==0){
+			for (Operation o: operations){
+				switch(o.operationType){
+					case "begin":
+						transactions.add(New Transaction(o.transactionName, false, 0));
+						runningTransactions++;
+						break;
+					case "beginRO":
+						transactions.add(New Transaction(o.transactionName, true, 0));
+						runningTransactions++;
+						break;
+					case "end":
+					case "W":
+					case "R":
+					case "dump":
+						dump(o);
+						break;
+					case "fail":
+						failSite(o.failSite);
+						break;
+					case "recover":
+						recoverSite();
+						break;
+				}
+
+			}
+			if (runningTransactions > 1)
+				detectDeadlock()
+			currentTime++;
+		}
 	}
 
 	public void detectDeadlock(){
 		if (runningTransactions==1)
 			return;
+
+	}
+
+	public void dump(Operation o){
+
+	}
+
+	public void failSite(int s){
+
+	}
+
+	public void recoverSite(int s){
 
 	}
 }

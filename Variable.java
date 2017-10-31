@@ -23,7 +23,7 @@ public class Variable {
   
   public Variable (int number, int value) {
     this.number = number;
-    this.value = value;
+    this.value = 10 * number;
     this.commitTime = 0;
   }
 
