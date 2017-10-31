@@ -11,6 +11,7 @@ public class RepCRec {
     for (int i = 0; i < args.length; i++) {
       String fileName = args[i];
       ArrayList<Operation> operations = getOperations(fileName);
+      ArrayList<Site> sites = initializeSites();
     }
   }
 
@@ -95,6 +96,14 @@ public class RepCRec {
     // create new operation and return
     Operation operation = new Operation(operationName, operationType, transactionName, variableName, value, dumpVariable, dumpSite, failSite, recoverSite);
     return operation;
+  }
+
+  //initializes all 10 sites
+  public static ArrayList<Site> initializeSites(){
+      ArrayList<Site> sites= new ArrayList<Site>;
+      for(int i==1; i<11; i++)
+        sites.add(new Site(i));
+      return sites;
   }
 }
 
