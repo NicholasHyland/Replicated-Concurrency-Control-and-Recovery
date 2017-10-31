@@ -6,6 +6,7 @@ public class Transaction {
   boolean isReadOnly;
   double startTime;
   double endTime;
+  boolean aborted;
   ArrayList<Operations> operations;
   Operation currentOperation;
 
