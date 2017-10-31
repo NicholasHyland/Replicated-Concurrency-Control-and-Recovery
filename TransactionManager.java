@@ -13,6 +13,7 @@ public class TransactionManager {
 		this.operations = operations;
 		runningTransactions=0;
 		currentTime=0;
+		initializeSites();
 	}
 
 	//initializes all 10 sites
