@@ -11,7 +11,9 @@ public class Variable {
   int value;
   int commitTime;
   ArrayList<Transaction> transactions;
+  ArrayList<Lock> lockTable;
   boolean isReadLocked;
+  boolean isWriteLocked;
 
   public Variable (String name, int value, boolean isCopy) {
     this.name = name;

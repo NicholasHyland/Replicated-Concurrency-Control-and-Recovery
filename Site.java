@@ -8,6 +8,7 @@ public class Site {
   int number;
   // has independent lock table
   ArrayList<Variable> variables;
+  ArrayList<Lock> lockTable;
 
   public Site(int number) {
     this.isDown = false;
