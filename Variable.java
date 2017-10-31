@@ -7,6 +7,7 @@ public class Variable {
   boolean isCopy;
   Site site;
   int value;
+  int commitTime;
   ArrayList<Transaction> transactions;
   boolean isReadLocked;
 
@@ -19,6 +20,7 @@ public class Variable {
   public Variable (int number, int value) {
     this.number = number;
     this.value = value;
+    this.commitTime = 0;
   }
 
 }
