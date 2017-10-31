@@ -11,6 +11,8 @@ public class RepCRec {
     for (int i = 0; i < args.length; i++) {
       String fileName = args[i];
       ArrayList<Operation> operations = getOperations(fileName);
+      TransactionManager TM = new TransactionManager(operations);
+      TM.simulate();
     }
   }
 
