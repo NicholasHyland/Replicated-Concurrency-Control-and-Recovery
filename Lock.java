@@ -13,7 +13,9 @@ public class Lock{
 			this.isWrite=false;
 		}
 		else
-			if (type.equals("Write"))
+			if (type.equals("Write")){
 				this.isWrite=true;
+				this.isRead=false;
+			}
 	}
 }
