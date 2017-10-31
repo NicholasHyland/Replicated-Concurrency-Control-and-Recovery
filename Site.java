@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 // This is a class to model Sites
 
 public class Site {
@@ -31,4 +33,5 @@ public class Site {
         i+=2;
       }
     }
+  }
 }

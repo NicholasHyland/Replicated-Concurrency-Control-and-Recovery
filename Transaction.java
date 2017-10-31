@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 //This is a class to model Transactions
 
 public class Transaction {
@@ -6,7 +8,7 @@ public class Transaction {
   boolean isReadOnly;
   double startTime;
   double endTime;
-  ArrayList<Operations> operations;
+  ArrayList<Operation> operations;
   Operation currentOperation;
 
   public Transaction(String name, boolean isReadOnly) {
