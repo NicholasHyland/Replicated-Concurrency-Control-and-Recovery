@@ -4,7 +4,10 @@ import java.util.ArrayList;
 public class TransactionManager {
 
 	ArrayList<Operation> operations;
+	ArrayList<Transaction> transactions;
+	ArrayList<Variable> variables;
 	int runningTransactions;
+
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
@@ -20,6 +23,10 @@ public class TransactionManager {
   	}
 
 	public void simulate(){
+
+	}
+
+	public void detectDeadlock(){
 
 	}
 }
