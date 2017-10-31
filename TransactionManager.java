@@ -7,7 +7,7 @@ public class TransactionManager {
 	ArrayList<Transaction> transactions;
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
-	int runningTransactions, currentTime;
+	public static int runningTransactions, currentTime;
 
 
 	public TransactionManager(ArrayList<Operation> operations){
@@ -51,21 +51,25 @@ public class TransactionManager {
 	} */
 
 	public void simulate(){
-		Operation current;
+		//Operation current;
 		while (runningTransactions>0 || currentTime==0){
 			for (Operation o: operations){
 				switch(o.operationType){
 					case "begin":
-						transactions.add(New Transaction(o.transactionName, false, 0));
-						runningTransactions++;
+						beginTransaction(operation o, false);
 						break;
 					case "beginRO":
-						transactions.add(New Transaction(o.transactionName, true, 0));
-						runningTransactions++;
+						beginTransaction(operation o, true);
 						break;
 					case "end":
+						endTransaction(o);
+						break;
 					case "W":
+						write(o);
+						break;
 					case "R":
+						read(o);
+						break;
 					case "dump":
 						dump(o);
 						break;
@@ -88,6 +92,28 @@ public class TransactionManager {
 		if (runningTransactions==1)
 			return;
 
+	}
+
+	public void beginTransaction(operation O, boolean RO){
+		if (RO){
+			transactions.add(New Transaction(o.transactionName, true, currentTime));
+		}
+		else {
+			transactions.add(New Transaction(o.transactionName, false, currentTime));
+		}
+		runningTransactions++;
+	}
+
+	public void endTransaction(Operation o){
+
+	}
+
+	public void write(){
+
+	}
+
+	public void read(){
+		
 	}
 
 	public void dump(Operation o){
