@@ -1,4 +1,5 @@
 //This is a class to model Transactions
+import java.util.ArrayList;
 
 public class Transaction {
 
