@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 // This is a class to model Sites
 import java.util.ArrayList;
 
@@ -8,7 +6,7 @@ public class Site {
   boolean isDown;
   int number;
   // has independent lock table
-  ArrayList<Variable> variables;
+  ArrayList<Variable> variables = new ArrayList<Variable>();
   ArrayList<Lock> lockTable;
 
   public Site(int number) {
@@ -17,13 +15,23 @@ public class Site {
 
     //initialize variables at this site
     //if this is an even numbered site
-    ArrayList<Variable> allVariables = new ArrayList<Variable>();
     if (number % 2 == 0){
       int i = 1;
       while (i < 21){
         //add the 2 odd variables and all even variables
-        if ((i % 10 + 1) == number || (i % 2) == 0){
-	         allVariables.add(new Variable(i, false));
+
+        // if it one of the 2 odd variables, then add - it is not a copy
+        if ((i % 10 + 1) == number) {
+          this.variables.add(new Variable(i, false, number));
+        }
+        // if it is an even variable, then add - not a copy if the variable number is the same as the site number
+        else if ((i % 2) == 0) {
+          if (i == number) {
+            this.variables.add(new Variable(i, false, number));
+          }
+          else {
+            this.variables.add(new Variable(i, true, number));
+          }
         }
         i++;
       }
@@ -32,10 +40,13 @@ public class Site {
     else {
       int i = 2;
       while (i < 21){
-        allVariables.add(new Variable(i, false));
+        this.variables.add(new Variable(i, true, number)); // all variables at odd numbered sites are copies
         i += 2;
       }
     }
-    this.variables = allVariables;
+  }
+
+  public void fail() {
+    this.lockTable = new ArrayList<Lock>(); //set lock table to be new lock table - erases previous locks
   }
 }

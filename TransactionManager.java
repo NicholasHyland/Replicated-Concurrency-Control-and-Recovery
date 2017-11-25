@@ -4,7 +4,7 @@ import java.util.ArrayList;
 public class TransactionManager {
 
 	ArrayList<Operation> operations;
-	ArrayList<Transaction> transactions;
+	ArrayList<Transaction> transactions = new ArrayList<Transaction>();
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
@@ -54,8 +54,9 @@ public class TransactionManager {
 
 	public void simulate(){
 		//Operation current;
-		while (runningTransactions > 0 || currentTime == 0){
-			for (Operation o : operations){
+		while (this.runningTransactions > 0 || this.currentTime == 0){
+			for (Operation o : this.operations){
+				// o.printOperation();
 				switch(o.operationType) {
 					case "begin":
 						beginTransaction(o, false);
@@ -83,28 +84,29 @@ public class TransactionManager {
 						break;
 				}
 
-			}
-			if (runningTransactions > 1) {
+				// detect deadlock
+				if (this.runningTransactions > 1) {
 				detectDeadlock();
+				}
+				// increment time
+				this.currentTime++;
 			}
-			currentTime++;
 		}
 	}
 
 	public void detectDeadlock(){
-		if (runningTransactions == 1)
+		if (this.runningTransactions == 1)
 			return;
-
 	}
 
 	public void beginTransaction(Operation operation, boolean isReadOnly){
 		if (isReadOnly){
-			transactions.add(new Transaction(operation.transactionName, true, currentTime));
+			this.transactions.add(new Transaction(operation.transactionName, true, this.currentTime));
 		}
 		else {
-			transactions.add(new Transaction(operation.transactionName, false, currentTime));
+			this.transactions.add(new Transaction(operation.transactionName, false, this.currentTime));
 		}
-		runningTransactions++;
+		this.runningTransactions++;
 	}
 
 	public void endTransaction(Operation o){
@@ -124,7 +126,7 @@ public class TransactionManager {
 	}
 
 	public void failSite(int s){
-
+		this.sites.get(s - 1).fail(); // fail this site - clear the lock table
 	}
 
 	public void recoverSite(int s){

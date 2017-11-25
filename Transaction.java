@@ -13,10 +13,10 @@ public class Transaction {
   ArrayList<Operation> operations;
   Operation currentOperation;
 
-  public Transaction(String name, boolean isReadOnly, int t) {
+  public Transaction(String name, boolean isReadOnly, int startTime) {
       this.name = name;
       this.isReadOnly = isReadOnly;
-      this.startTime = t;
+      this.startTime = startTime;
   }
 
 }
