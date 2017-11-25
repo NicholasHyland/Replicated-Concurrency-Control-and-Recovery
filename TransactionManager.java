@@ -12,15 +12,18 @@ public class TransactionManager {
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
-		runningTransactions = 0;
-		currentTime = 0;
+		this.runningTransactions = 0;
+		this.currentTime = 0;
 		initializeSites();
 	}
 
 	//initializes all 10 sites
 	public void initializeSites(){
-  	for(int i = 1; i < 11; i++)
-  		this.sites.add(new Site(i));
+		ArrayList<Site> allSites = new ArrayList<Site>();
+  	for(int i = 1; i < 11; i++){
+  		allSites.add(new Site(i));
+  	}
+  	this.sites = allSites;
 	}
 
   /*

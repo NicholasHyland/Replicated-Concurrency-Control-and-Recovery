@@ -12,7 +12,7 @@ public class RepCRec {
       String fileName = args[i];
       ArrayList<Operation> operations = getOperations(fileName);
       TransactionManager transactionManager = new TransactionManager(operations);
-      transactionManager.simulate();
+      // transactionManager.simulate();
     }
   }
 
