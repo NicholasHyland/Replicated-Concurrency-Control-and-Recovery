@@ -6,16 +6,16 @@ public class Lock{
 	boolean isWrite;
 	int onVariable;
 
-	public Lock(String type, int Var){
-		this.onVariable = Var;
+	public Lock(String type, int variable){
+		this.onVariable = variable;
 		if(type.equals("Read")){
-			this.isRead=true;
-			this.isWrite=false;
+			this.isRead = true;
+			this.isWrite = false;
 		}
 		else
 			if (type.equals("Write")){
-				this.isWrite=true;
-				this.isRead=false;
+				this.isWrite = true;
+				this.isRead = false;
 			}
 	}
 }

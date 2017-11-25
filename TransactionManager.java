@@ -12,19 +12,18 @@ public class TransactionManager {
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
-		runningTransactions=0;
-		currentTime=0;
+		runningTransactions = 0;
+		currentTime = 0;
 		initializeSites();
 	}
 
 	//initializes all 10 sites
-  	public static void initializeSites(){
-  		sites= new ArrayList<Site>();
-    	for(int i=1; i<11; i++)
-    		sites.add(new Site(i));
-  	}
+	public void initializeSites(){
+  	for(int i = 1; i < 11; i++)
+  		this.sites.add(new Site(i));
+	}
 
-  	/*
+  /*
 
 	public void simulate(){
 		Operation current;
@@ -52,14 +51,14 @@ public class TransactionManager {
 
 	public void simulate(){
 		//Operation current;
-		while (runningTransactions>0 || currentTime==0){
-			for (Operation o: operations){
-				switch(o.operationType){
+		while (runningTransactions > 0 || currentTime == 0){
+			for (Operation o : operations){
+				switch(o.operationType) {
 					case "begin":
-						beginTransaction(operation o, false);
+						beginTransaction(o, false);
 						break;
 					case "beginRO":
-						beginTransaction(operation o, true);
+						beginTransaction(o, true);
 						break;
 					case "end":
 						endTransaction(o);
@@ -77,29 +76,30 @@ public class TransactionManager {
 						failSite(o.failSite);
 						break;
 					case "recover":
-						recoverSite();
+						recoverSite(o.recoverSite);
 						break;
 				}
 
 			}
-			if (runningTransactions > 1)
-				detectDeadlock()
+			if (runningTransactions > 1) {
+				detectDeadlock();
+			}
 			currentTime++;
 		}
 	}
 
 	public void detectDeadlock(){
-		if (runningTransactions==1)
+		if (runningTransactions == 1)
 			return;
 
 	}
 
-	public void beginTransaction(operation O, boolean RO){
-		if (RO){
-			transactions.add(New Transaction(o.transactionName, true, currentTime));
+	public void beginTransaction(Operation operation, boolean isReadOnly){
+		if (isReadOnly){
+			transactions.add(new Transaction(operation.transactionName, true, currentTime));
 		}
 		else {
-			transactions.add(New Transaction(o.transactionName, false, currentTime));
+			transactions.add(new Transaction(operation.transactionName, false, currentTime));
 		}
 		runningTransactions++;
 	}
@@ -108,12 +108,12 @@ public class TransactionManager {
 
 	}
 
-	public void write(){
+	public void write(Operation o){
 
 	}
 
-	public void read(){
-		
+	public void read(Operation o){
+
 	}
 
 	public void dump(Operation o){

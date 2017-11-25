@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 public class Variable {
 
-  String name;
   int number;
   boolean isCopy;
   Site site;
@@ -15,15 +14,10 @@ public class Variable {
   boolean isReadLocked;
   boolean isWriteLocked;
 
-  public Variable (String name, int value, boolean isCopy) {
-    this.name = name;
-    this.value = value; // 10 * Integer.parseInt((name.split("x."))[0]);
+  public Variable (int number, boolean isCopy) {
+    this.number = number; // 10 * Integer.parseInt((name.split("x."))[0]);
+    this.value = number * 10;
     this.isCopy = isCopy; // name.contains(".");
-  }
-  
-  public Variable (int number, int value) {
-    this.number = number;
-    this.value = 10 * number;
     this.commitTime = 0;
   }
 

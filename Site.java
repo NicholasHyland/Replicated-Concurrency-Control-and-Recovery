@@ -17,22 +17,22 @@ public class Site {
 
     //initialize variables at this site
     //if this is an even numbered site
-    if (number%2==0){
-      int i=1;
-      while (i<21){
+    if (number % 2 == 0){
+      int i = 1;
+      while (i < 21){
         //add the 2 odd variables and all even variables
-        if ((i%10+1)==number || (i%2)==0){
-	         this.variables.add(new Variable(i));	  
+        if ((i % 10 + 1) == number || (i % 2) == 0){
+	         this.variables.add(new Variable(i, false));
         }
         i++;
       }
     }
-    //if this is an odd numbered site add only the even variables 
+    //if this is an odd numbered site add only the even variables
     else {
-      int i=2;
-      while (i<21){
-        this.variables.add(new Variable(i));    
-        i+=2;
+      int i = 2;
+      while (i < 21){
+        this.variables.add(new Variable(i, false));
+        i += 2;
       }
     }
   }
