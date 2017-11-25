@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+
 // This is a class to model Variables
 
 public class Variable {
@@ -9,7 +11,9 @@ public class Variable {
   int value;
   int commitTime;
   ArrayList<Transaction> transactions;
+  ArrayList<Lock> lockTable;
   boolean isReadLocked;
+  boolean isWriteLocked;
 
   public Variable (String name, int value, boolean isCopy) {
     this.name = name;
@@ -19,7 +23,7 @@ public class Variable {
   
   public Variable (int number, int value) {
     this.number = number;
-    this.value = value;
+    this.value = 10 * number;
     this.commitTime = 0;
   }
 

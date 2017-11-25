@@ -11,7 +11,8 @@ public class RepCRec {
     for (int i = 0; i < args.length; i++) {
       String fileName = args[i];
       ArrayList<Operation> operations = getOperations(fileName);
-      ArrayList<Site> sites = initializeSites();
+      TransactionManager TM = new TransactionManager(operations);
+      TM.simulate();
     }
   }
 
@@ -98,12 +99,5 @@ public class RepCRec {
     return operation;
   }
 
-  //initializes all 10 sites
-  public static ArrayList<Site> initializeSites(){
-      ArrayList<Site> sites= new ArrayList<Site>;
-      for(int i==1; i<11; i++)
-        sites.add(new Site(i));
-      return sites;
-  }
 }
 
