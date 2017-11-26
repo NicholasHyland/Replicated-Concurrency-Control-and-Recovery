@@ -22,4 +22,8 @@ public class Variable {
     this.commitTime = 0;
   }
 
+  public void setValue(int v){
+    this.value=v;
+  }
+
 }

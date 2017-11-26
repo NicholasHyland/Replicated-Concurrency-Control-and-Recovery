@@ -4,6 +4,8 @@ import java.util.ArrayList;
 public class Site {
 
   boolean isDown;
+  boolean wasDown;
+  int wasDownTime;
   int number;
   ArrayList<Variable> variables = new ArrayList<Variable>();
   LockTable lockTable = new LockTable();
@@ -11,6 +13,7 @@ public class Site {
 
   public Site(int number) {
     this.isDown = false;
+    this.wasDown = false;
     this.number = number;
 
     //initialize variables at this site
@@ -48,5 +51,14 @@ public class Site {
   public void fail() {
     this.lockTable = new ArrayList<Lock>(); //set lock table to be new lock table - erases previous locks
     this.isDown = true;
+  }
+
+  public void update(Operation o) {
+    for (Variable v: this.variables) {
+      if (v.number == o.variableID) {
+        v.setValue(o.value);
+      }
+    }
+
   }
 }

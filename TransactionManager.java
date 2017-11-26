@@ -10,6 +10,7 @@ public class TransactionManager {
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
 	ArrayList<ArrayList<Integer>> graph = new ArrayList<ArrayList<Integer>>();
+	DataManager DM = new DataManager();
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
@@ -21,10 +22,10 @@ public class TransactionManager {
 	//initializes all 10 sites
 	public void initializeSites(){
 		ArrayList<Site> allSites = new ArrayList<Site>();
-  	for(int i = 1; i < 11; i++){
-  		allSites.add(new Site(i));
-  	}
-  	this.sites = allSites;
+  		for(int i = 1; i < 11; i++){
+  			allSites.add(new Site(i));
+  		}
+  		this.sites = allSites;
 	}
 
   /*
@@ -123,6 +124,9 @@ public class TransactionManager {
 					if (!canWrite) {
 						this.blockedOperations.add(currentOperation);
 					}
+					else {
+						currentOperation.setTime(this.currentTime);
+					}
 					detectDeadlock(); // detect deadlock
 					break;
 				case "R":
@@ -166,7 +170,50 @@ public class TransactionManager {
 	}
 
 	public void endTransaction(Operation o){
-
+		this.runningTransactions--;
+		System.out.println("Ending transaction " + o.transactionID);
+		//return is transaction is read only -- no need to commit values or check for site failure
+		for (Transaction t: this.transactions){
+			if (t.transactionID == o.transactionID && t.isReadOnly)
+				return;
+		}
+		ArrayList<Operation> ops = this.transactions.get(o.transactionID);
+		for (Operation op: ops) {
+			if (op.variableID%2 == 1) {
+				Site site = this.sites.get(op.variableID);
+				if (site.wasDown) {
+					int t = site.wasDownTime;
+					if (op.time>t){
+						//abortTransaction(op.transactionID);
+						System.out.println("Transaction " + op.transactionID + " is aborted at time " + this.currentTime);
+					}
+				}
+				else {
+					this.sites.get(op.variableID).update(op);
+					System.out.println("Transaction " + op.transactionID + " committed at time " + this.currentTime);
+				}
+			}
+			else {
+				boolean siteDown = false;
+				for (Site site: this.sites) {
+					if (site.wasDown) {
+						int t = site.wasDownTime;
+						if (op.time>t){
+							//abortTransaction(op.transactionID);
+							System.out.println("Transaction " + op.transactionID + " is aborted at time " + this.currentTime);
+							siteDown=true;
+							break;
+						}
+					}
+				}
+				if (!siteDown) {
+					for (Site site: this.sites) {
+						site.update(op);
+					}
+					System.out.println("Transaction " + op.transactionID + " committed at time " + this.currentTime);
+				}
+			}
+		}
 	}
 
 	// it is going to write or not write based on whether or not it has the correct locks
@@ -190,17 +237,42 @@ public class TransactionManager {
 					return false;
 				}
 				else {
-
+					this.transactions.get(o.transactionID).operations.add(o);
+					return true;
 				}
 			}
 		}
 		// even variable - all sites
 		else {
-
+			boolean oneDown = false;
+			for (int i=0; i<this.sites.size(); i++) {
+				Site currentSite = this.sites.get(i);
+				if (currentSite.isDown) {
+					System.out.println("Cannot write to variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+					continue;
+					//return false;
+				}
+				else {
+					if (currentSite.lockTable.writeLocks.containsKey(o.variableID) || currentSite.lockTable.readLocks.containsKey(o.variableID)) {
+						// if writeLocks.containsKey, add pointer from o.transactionID --> writeLocks.get(o.variableID)
+						// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
+						// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
+						// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
+						this.sites.get(siteIndex).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
+						oneDown=true;
+					}
+				}
+			}
+			if (!oneDown) { 
+				this.transactions.get(o.transactionID).operations.add(o);
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		// write stuff if it can - return true
 		// cannot write because it doesn't have locks - return false
-		return true;
 	}
 
 	public boolean read(Operation o){
@@ -227,6 +299,7 @@ public class TransactionManager {
 	}
 
 	public void failSite(int s){
+		//TODO keep track of time when site failed
 		this.sites.get(s - 1).fail(); // fail this site - clear the lock table
 	}
 

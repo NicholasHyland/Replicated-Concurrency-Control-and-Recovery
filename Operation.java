@@ -11,6 +11,7 @@ public class Operation {
   int dumpSite; // required for dump(xj)
   int failSite; // required for fail(i)
   int recoverSite; // required for recover(i)
+  int time; //time this r/w operation accessed a site
 
   public Operation(String operationName, String operationType, String transactionName, String variableName, int value, int dumpVariable, int dumpSite, int failSite, int recoverSite) {
     this.operationName = operationName;
@@ -65,6 +66,10 @@ public class Operation {
         System.out.println("Site " + recoverSite + " recovers");
         break;
     }
+  }
+
+  public void setTime(int t) {
+    this.time = t;
   }
 
 }
