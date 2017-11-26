@@ -4,8 +4,8 @@ public class Operation {
 
   String operationName;
   String operationType; //required for all
-  String transactionName; //required for begin, beginRO, R, W, end
-  String variableName; // required for R, W,
+  int transactionID; //required for begin, beginRO, R, W, end
+  int variableID; // required for R, W,
   int value; // required for W
   int dumpVariable; // required for dump(i)
   int dumpSite; // required for dump(xj)
@@ -15,8 +15,10 @@ public class Operation {
   public Operation(String operationName, String operationType, String transactionName, String variableName, int value, int dumpVariable, int dumpSite, int failSite, int recoverSite) {
     this.operationName = operationName;
     this.operationType = operationType;
-    this.transactionName = transactionName;
-    this.variableName = variableName;
+    String transaction = transactionName.replaceAll("T", "");
+    this.transactionID = Integer.parseInt(transaction);
+    String variable = variableName.replaceAll("x", "");
+    this.variableID = Integer.parseInt(variable);
     this.value = value;
     this.dumpVariable = dumpVariable;
     this.dumpSite = dumpSite;

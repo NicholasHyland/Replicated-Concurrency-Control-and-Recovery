@@ -9,7 +9,7 @@ public class TransactionManager {
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
-
+	ArrayList<ArrayList<Integer>> graph = new ArrayList<ArrayList<Integer>>();
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
@@ -161,6 +161,7 @@ public class TransactionManager {
 		else {
 			this.transactions.add(new Transaction(operation.transactionName, false, this.currentTime));
 		}
+		operation.printOperation();
 		this.runningTransactions++;
 	}
 
@@ -170,12 +171,54 @@ public class TransactionManager {
 
 	// it is going to write or not write based on whether or not it has the correct locks
 	public boolean write(Operation o){
+
+		// odd variable - one site
+		if (o.variableID % 2 != 0) {
+			int siteIndex = (o.variableID % 10);
+			Site currentSite = this.sites.get(siteIndex);
+			if (currentSite.isDown) {
+				System.out.println("Cannot write to variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+				return false;
+			}
+			else {
+				if (currentSite.lockTable.writeLocks.containsKey(o.variableID) || currentSite.lockTable.readLocks.containsKey(o.variableID)) {
+					// if writeLocks.containsKey, add pointer from o.transactionID --> writeLocks.get(o.variableID)
+					// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
+					// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
+					// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
+					this.sites.get(siteIndex).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
+					return false;
+				}
+				else {
+
+				}
+			}
+		}
+		// even variable - all sites
+		else {
+
+		}
 		// write stuff if it can - return true
 		// cannot write because it doesn't have locks - return false
 		return true;
 	}
 
 	public boolean read(Operation o){
+		// R(T1,x3);
+
+		// if (o.variableID % 2 != 0) {
+		// 	int siteIndex = (o.variableID % 10);
+		// 	Site currentSite = this.sites.get(siteIndex);
+		// 	if (currentSite.isDown) {
+		// 		System.out.println("Cannot read variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+		// 		return false;
+		// 	}
+		// 	else {
+		// 		if (currentSite.lockTable.readLocks.containsKey(o.variableID)) {
+
+		// 		}
+		// 	}
+		// }
 		return true;
 	}
 

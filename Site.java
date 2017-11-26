@@ -5,9 +5,9 @@ public class Site {
 
   boolean isDown;
   int number;
-  // has independent lock table
   ArrayList<Variable> variables = new ArrayList<Variable>();
-  ArrayList<Lock> lockTable;
+  LockTable lockTable = new LockTable();
+
 
   public Site(int number) {
     this.isDown = false;
