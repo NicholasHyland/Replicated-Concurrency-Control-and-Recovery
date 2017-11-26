@@ -1,5 +1,3 @@
-import java.util.ArrayList;
-
 //This is a class to model Transactions
 import java.util.ArrayList;
 

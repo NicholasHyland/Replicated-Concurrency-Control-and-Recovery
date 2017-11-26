@@ -4,6 +4,7 @@ import java.util.ArrayList;
 public class TransactionManager {
 
 	ArrayList<Operation> operations;
+	ArrayList<Operation> blockedOperations = new ArrayList<Operation>();
 	ArrayList<Transaction> transactions = new ArrayList<Transaction>();
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
@@ -54,47 +55,101 @@ public class TransactionManager {
 
 	public void simulate(){
 		//Operation current;
-		while (this.runningTransactions > 0 || this.currentTime == 0){
-			for (Operation o : this.operations){
-				// o.printOperation();
-				switch(o.operationType) {
-					case "begin":
-						beginTransaction(o, false);
-						break;
-					case "beginRO":
-						beginTransaction(o, true);
-						break;
-					case "end":
-						endTransaction(o);
-						break;
-					case "W":
-						write(o);
-						break;
-					case "R":
-						read(o);
-						break;
-					case "dump":
-						dump(o);
-						break;
-					case "fail":
-						failSite(o.failSite);
-						break;
-					case "recover":
-						recoverSite(o.recoverSite);
-						break;
+		while (this.operations.size() > 0 || this.blockedOperations.size() > 0) {
+			// process blocked Operations first
+			boolean leaveQueue = false;
+			while (this.blockedOperations.size() > 0 && !leaveQueue) {
+				boolean removeIndex = false;
+				int index = 0;
+				for (int i = 0; i < this.blockedOperations.size(); i++) {
+					Operation currentOperation = this.blockedOperations.get(i);
+					if (currentOperation.operationType.equals("R")) {
+						boolean canRead = read(currentOperation);
+						if (canRead) {
+							// Can read - remove from list, add time, start beginning of list again
+							index = i;
+							this.currentTime++;
+							removeIndex = true;
+							break;
+						}
+						else {
+							// if not the last operation in queue, continue to the next
+							// if it is the last operation then set leaveQueue to true
+							if (i == this.blockedOperations.size() - 1) {
+								leaveQueue = true;
+							}
+						}
+					}
+					else {
+						boolean canWrite = write(currentOperation);
+						if (canWrite) {
+							// Can read - remove from list, add time, start beginning of list again
+							index = i;
+							this.currentTime++;
+							removeIndex = true;
+							break;
+						}
+						else {
+							// if not the last operation in queue, continue to the next
+							// if it is the last operation then set leaveQueue to true
+							if (i == this.blockedOperations.size() - 1) {
+								leaveQueue = true;
+							}
+						}
+					}
 				}
-
-				// detect deadlock
-				if (this.runningTransactions > 1) {
-				detectDeadlock();
+				if (removeIndex) {
+					this.blockedOperations.remove(index);
 				}
-				// increment time
-				this.currentTime++;
 			}
+
+			// Process operations in first list
+			Operation currentOperation = this.operations.get(0);
+			currentOperation.printOperation(); // print operation
+			switch(currentOperation.operationType) {
+				case "begin":
+					beginTransaction(currentOperation, false);
+					break;
+				case "beginRO":
+					beginTransaction(currentOperation, true);
+					break;
+				case "end":
+					endTransaction(currentOperation);
+					break;
+				case "W":
+					boolean canWrite = write(currentOperation);
+					// if cannot write, put into blocked queue
+					// if true, continue, if false, put into blocked queue
+					if (!canWrite) {
+						this.blockedOperations.add(currentOperation);
+					}
+					detectDeadlock(); // detect deadlock
+					break;
+				case "R":
+					boolean canRead = read(currentOperation);
+					if (!canRead) {
+						this.blockedOperations.add(currentOperation);
+					}
+					detectDeadlock(); // detect deadlock
+					break;
+				case "dump":
+					dump(currentOperation);
+					break;
+				case "fail":
+					failSite(currentOperation.failSite);
+					break;
+				case "recover":
+					recoverSite(currentOperation.recoverSite);
+					break;
+			}
+			// remove current operation from list of operations
+			this.operations.remove(0);
+			// increment time
+			this.currentTime++;
 		}
 	}
 
-	public void detectDeadlock(){
+	public void detectDeadlock() {
 		if (this.runningTransactions == 1)
 			return;
 	}
@@ -113,12 +168,15 @@ public class TransactionManager {
 
 	}
 
-	public void write(Operation o){
-
+	// it is going to write or not write based on whether or not it has the correct locks
+	public boolean write(Operation o){
+		// write stuff if it can - return true
+		// cannot write because it doesn't have locks - return false
+		return true;
 	}
 
-	public void read(Operation o){
-
+	public boolean read(Operation o){
+		return true;
 	}
 
 	public void dump(Operation o){

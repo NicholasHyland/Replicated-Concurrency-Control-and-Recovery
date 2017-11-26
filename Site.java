@@ -19,7 +19,6 @@ public class Site {
       int i = 1;
       while (i < 21){
         //add the 2 odd variables and all even variables
-
         // if it one of the 2 odd variables, then add - it is not a copy
         if ((i % 10 + 1) == number) {
           this.variables.add(new Variable(i, false, number));
@@ -48,5 +47,6 @@ public class Site {
 
   public void fail() {
     this.lockTable = new ArrayList<Lock>(); //set lock table to be new lock table - erases previous locks
+    this.isDown = true;
   }
 }
