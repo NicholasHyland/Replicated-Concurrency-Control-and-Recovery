@@ -49,7 +49,7 @@ public class Site {
   }
 
   public void fail() {
-    this.lockTable = new ArrayList<Lock>(); //set lock table to be new lock table - erases previous locks
+    this.lockTable = new LockTable(); //set lock table to be new lock table - erases previous locks
     this.isDown = true;
   }
 

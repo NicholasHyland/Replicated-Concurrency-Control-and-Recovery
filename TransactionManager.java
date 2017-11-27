@@ -177,7 +177,7 @@ public class TransactionManager {
 			if (t.transactionID == o.transactionID && t.isReadOnly)
 				return;
 		}
-		ArrayList<Operation> ops = this.transactions.get(o.transactionID);
+		ArrayList<Operation> ops = this.transactions.get(o.transactionID).operations;
 		for (Operation op: ops) {
 			if (op.variableID%2 == 1) {
 				Site site = this.sites.get(op.variableID);
@@ -248,7 +248,7 @@ public class TransactionManager {
 			for (int i=0; i<this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				if (currentSite.isDown) {
-					System.out.println("Cannot write to variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+					System.out.println("Cannot write to variable x" + o.variableID + " because site " + i + 1 + " is down");
 					continue;
 					//return false;
 				}
@@ -258,12 +258,12 @@ public class TransactionManager {
 						// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
 						// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
 						// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
-						this.sites.get(siteIndex).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
+						this.sites.get(i).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
 						oneDown=true;
 					}
 				}
 			}
-			if (!oneDown) { 
+			if (!oneDown) {
 				this.transactions.get(o.transactionID).operations.add(o);
 				return true;
 			}
