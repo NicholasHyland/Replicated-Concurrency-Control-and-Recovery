@@ -19,4 +19,12 @@ public class LockTable {
     lockQueue.add(newLock);
     this.writeLockQueue.put(variableID, lockQueue);
   }
+
+  public void setWriteLock(Operation o) {
+    this.writeLocks.put(o.variableID, o.transactionID);
+  }
+
+  public void removeWriteLock(Operation o) {
+    this.writeLocks.remove(o.variableID);
+  }
 }

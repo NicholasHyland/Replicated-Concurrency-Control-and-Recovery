@@ -9,7 +9,7 @@ public class TransactionManager {
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
-	ArrayList<ArrayList<Integer>> graph = new ArrayList<ArrayList<Integer>>();
+	HashMap<Integer, ArrayList<Integer>> graph = new HashMap<Integer, ArrayList<Integer>>(); // key is transaction ID, value is list of pointers to other transactions
 	DataManager DM = new DataManager();
 
 	public TransactionManager(ArrayList<Operation> operations){
@@ -28,31 +28,76 @@ public class TransactionManager {
   		this.sites = allSites;
 	}
 
-  /*
+	public static ArrayList<Integer> detectCycleStart(HashMap<Integer, ArrayList<Integer>> graph) {
+    ArrayList<Integer> cycle = new ArrayList<Integer>();
+    Iterator iterator = graph.entrySet().iterator();
 
-	public void simulate(){
-		Operation current;
-		//loop until the current operation is not a begin
-		for (Operation o: operations){
-			current=o;
-			if (o.operationType.equals("begin")){
-				transactions.add(New Transaction(o.transactionName, false))
-			}
-			else if (o.operationType.equals("beginRO"))
-				transactions.add(New Transaction(o.transactionName, true))
-			runningTransactions++;
-			else break;
-		}
+    boolean hasCycle = false;
+    while (iterator.hasNext()) {
+      Map.Entry pair = (Map.Entry)iterator.next();
+      ArrayList<Integer> cycleCheck = detectCycle(graph, cycle, (Integer)pair.getKey());
+      if (cycleCheck.size() > 1) {
+        if (cycleCheck.get(0) == cycleCheck.get(cycleCheck.size() - 1)) {
+          hasCycle = true;
+          cycle = cycleCheck;
+          break;
+        }
+      }
+    }
 
-		//loop until all transactions have ended, detect deadlocks at every iteration, iterate time with every loop
-		while (runningTransactions>0){
+    if (hasCycle) {
+      return cycle;
+    }
+    else {
+      return new ArrayList<Integer>();
+    }
+  }
 
-
-
-			detectDeadlock();
-			currentTime++;
-		}
-	} */
+  public static ArrayList<Integer> detectCycle(HashMap<Integer, ArrayList<Integer>> graph, ArrayList<Integer> cycle, int currentNode) {
+    // not a cycle if it contains -1
+    if (cycle.contains(-1)) {
+      return cycle;
+    }
+    // the first node is the current node - there is a cycle
+    if (cycle.size() > 1) {
+      if (cycle.get(0) == cycle.get(cycle.size() - 1)) {
+        return cycle;
+      }
+    }
+    // if the cycle contains the current node, but it is not the first node - return the subcycle of the cycle
+    if (cycle.contains(currentNode)) {
+      // System.out.println("cycle " + cycle);
+      cycle.add(currentNode);
+      int start = 0;
+      for (int i = 0; i < cycle.size(); i++) {
+        if (cycle.get(i) == currentNode) {
+          start = i;
+          break;
+        }
+      }
+      ArrayList<Integer> newCycle = new ArrayList(cycle.subList(start, cycle.size()));
+      return newCycle;
+    }
+    // the current node is not a key in the graph -  no more out edges - not a cycle, but still return current cycle
+    if (!graph.containsKey(currentNode)) {
+      cycle.add(-1);
+      return cycle;
+    }
+    else {
+    	cycle.add(currentNode);
+      ArrayList<Integer> edges = graph.get(currentNode);
+      for (Integer edge : edges) {
+        ArrayList<Integer> checkCycle = detectCycle(graph, cycle, edge);
+        if (checkCycle.size() > 1) {
+          if (checkCycle.get(0) == checkCycle.get(checkCycle.size() - 1)) {
+            return checkCycle;
+          }
+        }
+      }
+      cycle.add(-1);
+      return cycle;
+    }
+  }
 
 	public void simulate(){
 		//Operation current;
@@ -181,6 +226,7 @@ public class TransactionManager {
 		for (Operation op: ops) {
 			if (op.variableID%2 == 1) {
 				Site site = this.sites.get(op.variableID);
+				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
 				if (site.wasDown) {
 					int t = site.wasDownTime;
 					if (op.time>t){
@@ -196,6 +242,7 @@ public class TransactionManager {
 			else {
 				boolean siteDown = false;
 				for (Site site: this.sites) {
+					site.lockTable.removeWriteLock(op); // remove the write lock from that site
 					if (site.wasDown) {
 						int t = site.wasDownTime;
 						if (op.time>t){
@@ -218,7 +265,6 @@ public class TransactionManager {
 
 	// it is going to write or not write based on whether or not it has the correct locks
 	public boolean write(Operation o){
-
 		// odd variable - one site
 		if (o.variableID % 2 != 0) {
 			int siteIndex = (o.variableID % 10);
@@ -237,6 +283,7 @@ public class TransactionManager {
 					return false;
 				}
 				else {
+					this.sites.get(siteIndex).lockTable.setWriteLock(o); // sets the write lock
 					this.transactions.get(o.transactionID).operations.add(o);
 					return true;
 				}
@@ -244,7 +291,7 @@ public class TransactionManager {
 		}
 		// even variable - all sites
 		else {
-			boolean oneDown = false;
+			boolean siteLocked = false;
 			for (int i=0; i<this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				if (currentSite.isDown) {
@@ -259,11 +306,14 @@ public class TransactionManager {
 						// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
 						// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
 						this.sites.get(i).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
-						oneDown=true;
+						siteLocked=true;
 					}
 				}
 			}
-			if (!oneDown) {
+			if (!siteLocked) {
+				for (Site s : this.sites) {
+					s.lockTable.setWriteLock(o);
+				}
 				this.transactions.get(o.transactionID).operations.add(o);
 				return true;
 			}
