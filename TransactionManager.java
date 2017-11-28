@@ -166,6 +166,7 @@ public class TransactionManager {
 					beginTransaction(currentOperation, true);
 					break;
 				case "end":
+					System.out.println("Ending a transaction at time " + this.currentTime);
 					endTransaction(currentOperation);
 					break;
 				case "W":
@@ -277,7 +278,7 @@ public class TransactionManager {
 			int youngest = cycle.get(0);
 			for (int i = 1; i < cycle.size() - 1; i++) {
 				int currentTransaction = cycle.get(i);
-				if (this.transactions.get(youngest).startTime > this.transactions.get(currentTransaction).startTime) {
+				if (this.transactions.get(youngest).startTime < this.transactions.get(currentTransaction).startTime) {
 					youngest = currentTransaction;
 				}
 			}
@@ -313,12 +314,12 @@ public class TransactionManager {
 	    		ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
 	    		ArrayList<Integer> newTransactions = new ArrayList<Integer>();
 	    		boolean remove = false;
-	    		for (i = 0; i < transactions.size(); i++) {
-	    			if (transactionID == transactions.get(i)) {
+	    		for (int j = 0; j < transactions.size(); j++) {
+	    			if (transactionID == transactions.get(j)) {
 	    				remove = true;
 	    				continue;
 	    			}
-	    			newTransactions.add(transactions.get(i));
+	    			newTransactions.add(transactions.get(j));
 	    		}
 	    		if (remove) {
 	    			if (transactions.size() == 1) {
@@ -337,12 +338,12 @@ public class TransactionManager {
 	    		ArrayList<Lock> locks = (ArrayList<Lock>)pair.getValue();
 	    		ArrayList<Lock> newLocks = new ArrayList<Lock>();
 	    		boolean remove = false;
-	    		for (i = 0; i < locks.size(); i++) {
-	    			if (transactionID == locks.get(i).transactionID) {
+	    		for (int j = 0; j < locks.size(); j++) {
+	    			if (transactionID == locks.get(j).transactionID) {
 	    				remove = true;
 	    				continue;
 	    			}
-	    			newLocks.add(locks.get(i));
+	    			newLocks.add(locks.get(j));
 	    		}
 	    		if (remove) {
 	    			if (locks.size() == 1) {
@@ -382,6 +383,13 @@ public class TransactionManager {
 			}
 		}
 
+		//removing deadlocked transaction from blocked operations
+		ArrayList<Operation> newBlockedOperations = new ArrayList<Operation>();
+		for (Operation o: this.blockedOperations){
+			if (o.transactionID!=transactionID)
+				newBlockedOperations.add(o);
+		}
+		this.blockedOperations=newBlockedOperations;
 
 		return;
 	}
@@ -398,7 +406,7 @@ public class TransactionManager {
 
 	public void endTransaction(Operation o){
 		this.runningTransactions--;
-		System.out.println("Ending transaction " + o.transactionID);
+		//System.out.println("Ending transaction " + o.transactionID);
 		//return if transaction is read only -- no need to commit values or check for site failure
 		if (this.transactions.get(o.transactionID).isReadOnly) {
 			return;
@@ -407,7 +415,7 @@ public class TransactionManager {
 		ArrayList<Operation> ops = this.transactions.get(o.transactionID).writeOperations;
 		for (Operation op: ops) {
 			if (op.variableID%2 == 1) {
-				Site site = this.sites.get(op.variableID);
+				Site site = this.sites.get(op.variableID%10);
 				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
 				if (site.wasDown) {
 					int t = site.wasDownTime;
@@ -417,7 +425,7 @@ public class TransactionManager {
 				}
 				else {
 					this.sites.get(op.variableID).update(op);
-					System.out.println("Transaction " + op.transactionID + " committed at time " + this.currentTime);
+					System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (op.variableID%10 +1) + " at time " + this.currentTime);
 				}
 			}
 			else {
@@ -434,10 +442,12 @@ public class TransactionManager {
 					}
 				}
 				if (!siteDown) {
-					for (Site site: this.sites) {
+					for (int i=0; i<this.sites.size(); i++) {
+						Site site = this.sites.get(i);
 						site.update(op);
+						System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (i+1) + " at time " + this.currentTime);
 					}
-					System.out.println("Transaction " + op.transactionID + " committed at time " + this.currentTime);
+					//System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (site) + " at time " + this.currentTime);
 				}
 			}
 		}
