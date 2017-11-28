@@ -535,18 +535,33 @@ public class TransactionManager {
 			if (vID%2 == 0){
 				for (int i=0; i<this.sites.size(); i++) {
 					Site site = this.sites.get(i);
-					System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
+					//System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
+					for (int j=0; j<site.variables.size(); j++) {
+						Variable v = site.variables.get(j);
+						if (v.number==vID)
+							System.out.println("x" + vID + ": " + v.getValue() + " at site " + (i+1));
+					}
 				}
 			}
 			else {
 				Site site = this.sites.get(vID%10);
-				System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (vID%10 +1));
+				for (int i=0; i<site.variables.size(); i++) {
+					Variable v = site.variables.get(i);
+					if (v.number==vID)
+						System.out.println("x" + vID + ": " + v.getValue() + " at site " + (vID%10 +1));
+				}
 			}
 		}	
 
 		else if (o.dumpSite != 0) {
+			Site site = this.sites.get(o.dumpSite-1);
+			for (Variable v: site.variables) {
+				System.out.println("x" + v.number + ": " + v.getValue() + " at site " + o.dumpSite);
+			}
 			
 		}
+
+
 		else {
 
 		}

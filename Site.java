@@ -23,7 +23,7 @@ public class Site {
       while (i < 21){
         //add the 2 odd variables and all even variables
         // if it one of the 2 odd variables, then add - it is not a copy
-        if ((i % 10 + 1) == number) {
+        if (((i % 10) + 1) == number) {
           this.variables.add(new Variable(i, false, number));
         }
         // if it is an even variable, then add - not a copy if the variable number is the same as the site number
