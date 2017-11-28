@@ -299,65 +299,88 @@ public class TransactionManager {
 			LockTable currentLockTable = currentSite.lockTable;
 			// remove from writeLocks
 			Iterator iterator = currentLockTable.writeLocks.entrySet().iterator();
-    	while (iterator.hasNext()) {
-      	Map.Entry pair = (Map.Entry)iterator.next();
-      	if ((Integer)pair.getValue() == transactionID) {
-      		iterator.remove();
-      	}
-    	}
+	    	while (iterator.hasNext()) {
+		      	Map.Entry pair = (Map.Entry)iterator.next();
+		      	if ((Integer)pair.getValue() == transactionID) {
+		      		iterator.remove();
+		      	}
+	    	}
 
 			// remove from readLocks
-    	iterator = currentLockTable.readLocks.entrySet().iterator();
-    	while (iterator.hasNext()) {
-    		Map.Entry pair = (Map.Entry)iterator.next();
-    		ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
-    		ArrayList<Integer> newTransactions = new ArrayList<Integer>();
-    		boolean remove = false;
-    		for (i = 0; i < transactions.size(); i++) {
-    			if (transactionID == transactions.get(i)) {
-    				remove = true;
-    				continue;
-    			}
-    			newTransactions.add(transactions.get(i));
-    		}
-    		if (remove) {
-    			if (transactions.size() == 1) {
-    				iterator.remove();
-    			}
-    			else {
-    				pair.setValue(newTransactions);
-    			}
-    		}
-    	}
+	    	iterator = currentLockTable.readLocks.entrySet().iterator();
+	    	while (iterator.hasNext()) {
+	    		Map.Entry pair = (Map.Entry)iterator.next();
+	    		ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
+	    		ArrayList<Integer> newTransactions = new ArrayList<Integer>();
+	    		boolean remove = false;
+	    		for (i = 0; i < transactions.size(); i++) {
+	    			if (transactionID == transactions.get(i)) {
+	    				remove = true;
+	    				continue;
+	    			}
+	    			newTransactions.add(transactions.get(i));
+	    		}
+	    		if (remove) {
+	    			if (transactions.size() == 1) {
+	    				iterator.remove();
+	    			}
+	    			else {
+	    				pair.setValue(newTransactions);
+	    			}
+	    		}
+	    	}
 
 			// remove from lockQueue
-    	iterator = currentLockTable.lockQueue.entrySet().iterator();
-    	while (iterator.hasNext()) {
-    		Map.Entry pair = (Map.Entry)iterator.next();
-    		ArrayList<Lock> locks = (ArrayList<Lock>)pair.getValue();
-    		ArrayList<Lock> newLocks = new ArrayList<Lock>();
-    		boolean remove = false;
-    		for (i = 0; i < locks.size(); i++) {
-    			if (transactionID == locks.get(i).transactionID) {
-    				remove = true;
-    				continue;
-    			}
-    			newLocks.add(locks.get(i));
-    		}
-    		if (remove) {
-    			if (locks.size() == 1) {
-    				iterator.remove();
-    			}
-    			else {
-    				pair.setValue(newLocks);
-    			}
-    		}
-    	}
-    	// re-set the currentLockTable
+	    	iterator = currentLockTable.lockQueue.entrySet().iterator();
+	    	while (iterator.hasNext()) {
+	    		Map.Entry pair = (Map.Entry)iterator.next();
+	    		ArrayList<Lock> locks = (ArrayList<Lock>)pair.getValue();
+	    		ArrayList<Lock> newLocks = new ArrayList<Lock>();
+	    		boolean remove = false;
+	    		for (i = 0; i < locks.size(); i++) {
+	    			if (transactionID == locks.get(i).transactionID) {
+	    				remove = true;
+	    				continue;
+	    			}
+	    			newLocks.add(locks.get(i));
+	    		}
+	    		if (remove) {
+	    			if (locks.size() == 1) {
+	    				iterator.remove();
+	    			}
+	    			else {
+	    				pair.setValue(newLocks);
+	    			}
+	    		}
+	    	}
+    		// re-set the currentLockTable
 			this.sites.get(i).lockTable = currentLockTable;
 		}
 
 		// Remove conflicts from graph
+		this.graph.remove(transactionID);
+		Iterator iterator = this.graph.entrySet().iterator();
+	    while (iterator.hasNext()) {
+			Map.Entry pair = (Map.Entry)iterator.next();
+			ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
+			ArrayList<Integer> newTransactions = new ArrayList<Integer>();
+			boolean remove = false;
+			for (int i = 0; i < transactions.size(); i++) {
+				if (transactionID == transactions.get(i)) {
+					remove = true;
+					continue;
+				}
+				newTransactions.add(transactions.get(i));
+			}
+			if (remove) {
+				if (transactions.size() == 1) {
+					iterator.remove();
+				}
+				else {
+					pair.setValue(newTransactions);
+				}
+			}
+		}
 
 
 		return;
