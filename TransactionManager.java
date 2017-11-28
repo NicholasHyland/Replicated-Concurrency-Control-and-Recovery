@@ -9,7 +9,8 @@ public class TransactionManager {
 
 	ArrayList<Operation> operations;
 	ArrayList<Operation> blockedOperations = new ArrayList<Operation>();
-	ArrayList<Transaction> transactions = new ArrayList<Transaction>();
+	HashMap<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
+	// ArrayList<Transaction> transactions = new ArrayList<Transaction>();
 	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
@@ -268,16 +269,32 @@ public class TransactionManager {
 	}
 
 	public void detectDeadlock() {
+		ArrayList<Integer> cycle = detectCycleStart(this.graph);
+		if (cycle.size() == 0) {
+			return;
+		}
+		else {
+			int youngest = cycle.get(0);
+			for (int i = 1; i < cycle.size() - 1; i++) {
+				int currentTransaction = cycle.get(i);
+				if (this.transactions.get(youngest).startTime > this.transactions.get(currentTransaction).startTime) {
+					youngest = currentTransaction;
+				}
+			}
+			abortTransaction(youngest);
+		}
+	}
+
+	public void abortTransaction(int transactionID) {
 		return;
-		//if deadlock detected, abort youngest -
 	}
 
 	public void beginTransaction(Operation operation, boolean isReadOnly){
 		if (isReadOnly){
-			this.transactions.add(new Transaction(operation.transactionName, true, this.currentTime));
+			this.transactions.put(operation.transactionID, new Transaction(operation.transactionName, true, this.currentTime));
 		}
 		else {
-			this.transactions.add(new Transaction(operation.transactionName, false, this.currentTime));
+			this.transactions.put(operation.transactionID, new Transaction(operation.transactionName, false, this.currentTime));
 		}
 		operation.printOperation();
 		this.runningTransactions++;
@@ -286,12 +303,12 @@ public class TransactionManager {
 	public void endTransaction(Operation o){
 		this.runningTransactions--;
 		System.out.println("Ending transaction " + o.transactionID);
-		//return is transaction is read only -- no need to commit values or check for site failure
-		for (Transaction t: this.transactions){
-			if (t.transactionID == o.transactionID && t.isReadOnly)
-				return;
+		//return if transaction is read only -- no need to commit values or check for site failure
+		if (this.transactions.get(o.transactionID).isReadOnly) {
+			return;
 		}
-		ArrayList<Operation> ops = this.transactions.get(o.transactionID).operations;
+
+		ArrayList<Operation> ops = this.transactions.get(o.transactionID).writeOperations;
 		for (Operation op: ops) {
 			if (op.variableID%2 == 1) {
 				Site site = this.sites.get(op.variableID);
@@ -350,7 +367,7 @@ public class TransactionManager {
 				}
 				else {
 					this.sites.get(siteIndex).lockTable.setWriteLock(o); // sets the write lock
-					this.transactions.get(o.transactionID).operations.add(o);
+					this.transactions.get(o.transactionID).writeOperations.add(o);
 					return true;
 				}
 			}
@@ -377,7 +394,7 @@ public class TransactionManager {
 				for (Site s : this.sites) {
 					s.lockTable.setWriteLock(o);
 				}
-				this.transactions.get(o.transactionID).operations.add(o);
+				this.transactions.get(o.transactionID).writeOperations.add(o);
 				return true;
 			}
 			else {
