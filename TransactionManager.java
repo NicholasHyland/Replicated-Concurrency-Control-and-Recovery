@@ -393,7 +393,6 @@ public class TransactionManager {
 		else {
 			this.transactions.put(operation.transactionID, new Transaction(operation.transactionName, false, this.currentTime));
 		}
-		operation.printOperation();
 		this.runningTransactions++;
 	}
 

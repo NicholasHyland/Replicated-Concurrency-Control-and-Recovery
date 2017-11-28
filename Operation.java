@@ -18,10 +18,14 @@ public class Operation {
     this.operationName = operationName;
     this.operationType = operationType;
     this.transactionName = transactionName;
-    String transaction = transactionName.replaceAll("T", "");
-    this.transactionID = Integer.parseInt(transaction);
-    String variable = variableName.replaceAll("x", "");
-    this.variableID = Integer.parseInt(variable);
+    if (transactionName != null) {
+      String transaction = transactionName.replaceAll("T", "");
+      this.transactionID = Integer.parseInt(transaction);
+    }
+    if (variableName != null) {
+      String variable = variableName.replaceAll("x", "");
+      this.variableID = Integer.parseInt(variable);
+    }
     this.value = value;
     this.dumpVariable = dumpVariable;
     this.dumpSite = dumpSite;
