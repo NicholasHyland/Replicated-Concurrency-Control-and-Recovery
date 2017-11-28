@@ -26,4 +26,8 @@ public class Variable {
     this.value=v;
   }
 
+  public int getValue(){
+    return this.value;
+  }
+
 }

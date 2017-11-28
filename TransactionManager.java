@@ -528,8 +528,28 @@ public class TransactionManager {
 		return true;
 	}
 
-	public void dump(Operation o){
+	public void dump(Operation o) {
+		System.out.println("=== output of dump");
+		if (o.dumpVariable != 0) {
+			int vID = o.dumpVariable;
+			if (vID%2 == 0){
+				for (int i=0; i<this.sites.size(); i++) {
+					Site site = this.sites.get(i);
+					System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
+				}
+			}
+			else {
+				Site site = this.sites.get(vID%10);
+				System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (vID%10 +1));
+			}
+		}	
 
+		else if (o.dumpSite != 0) {
+			
+		}
+		else {
+
+		}
 	}
 
 	public void failSite(int s){
