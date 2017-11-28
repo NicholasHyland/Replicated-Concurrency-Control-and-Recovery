@@ -15,7 +15,7 @@ public class TransactionManager {
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
 	HashMap<Integer, ArrayList<Integer>> graph = new HashMap<Integer, ArrayList<Integer>>(); // key is transaction ID, value is list of pointers to other transactions
-	DataManager DM = new DataManager();
+	//DataManager DM = new DataManager();
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
@@ -418,13 +418,13 @@ public class TransactionManager {
 				Site site = this.sites.get(op.variableID%10);
 				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
 				if (site.wasDown) {
-					int t = site.wasDownTime;
+					int t = site.latestDownTime;
 					if (op.time>t){
 						//abortTransaction(op.transactionID); - REMOVE LOCKS
 					}
 				}
 				else {
-					this.sites.get(op.variableID).update(op);
+					this.sites.get(op.variableID).update(op, this.currentTime);
 					System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (op.variableID%10 +1) + " at time " + this.currentTime);
 				}
 			}
@@ -433,7 +433,7 @@ public class TransactionManager {
 				for (Site site: this.sites) {
 					site.lockTable.removeWriteLock(op); // remove the write lock from that site
 					if (site.wasDown) {
-						int t = site.wasDownTime;
+						int t = site.latestDownTime;
 						if (op.time>t){
 							//abortTransaction(op.transactionID); - REMOVE LOCKS
 							siteDown=true;
@@ -444,7 +444,7 @@ public class TransactionManager {
 				if (!siteDown) {
 					for (int i=0; i<this.sites.size(); i++) {
 						Site site = this.sites.get(i);
-						site.update(op);
+						site.update(op, this.currentTime);
 						System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (i+1) + " at time " + this.currentTime);
 					}
 					//System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (site) + " at time " + this.currentTime);
@@ -477,6 +477,15 @@ public class TransactionManager {
 			}
 		}
 		// even variable - all sites
+		// *********************************************************************************************************
+		// *********************************************************************************************************
+		// *********************************************************************************************************
+		// *********************************************************************************************************
+		//if a site is down and you cant write to it do you set siteLocked to true and does the tx get blocked?
+		// *********************************************************************************************************
+		// *********************************************************************************************************
+		// *********************************************************************************************************
+		// *********************************************************************************************************
 		else {
 			boolean siteLocked = false;
 			for (int i=0; i<this.sites.size(); i++) {
@@ -510,22 +519,98 @@ public class TransactionManager {
 	}
 
 	public boolean read(Operation o){
-		// R(T1,x3);
+		//if this is a read only transaction, process it and return
+		if (this.transactions.get(o.transactionID).isReadOnly) {
+			if (o.variableID % 2 != 0) {
 
-		// if (o.variableID % 2 != 0) {
-		// 	int siteIndex = (o.variableID % 10);
-		// 	Site currentSite = this.sites.get(siteIndex);
-		// 	if (currentSite.isDown) {
-		// 		System.out.println("Cannot read variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
-		// 		return false;
-		// 	}
-		// 	else {
-		// 		if (currentSite.lockTable.readLocks.containsKey(o.variableID)) {
 
-		// 		}
-		// 	}
-		// }
-		return true;
+			}
+			else {
+
+			}
+			return true;
+			//this.sites.get().getLatestValue(o);
+		}
+
+
+		// odd variable - one site
+		if (o.variableID % 2 != 0) {
+			int siteIndex = (o.variableID % 10);
+			Site currentSite = this.sites.get(siteIndex);
+			if (currentSite.isDown) {
+				System.out.println("Cannot read variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+				return false;
+			}
+			else {
+				if (currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
+					addGraphConflicts(o, siteIndex);
+					this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
+					return false;
+				}
+				//if a site has been down, check if the latest commit time is after the latest down time
+				//a tx can only read from a site that recovered if it has been written to since recovery
+				else if(currentSite.wasDown) {
+					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
+					int latestDownTime = currentSite.latestDownTime;
+					if (latestDownTime<currentSite.latestCommitTime){
+						this.sites.get(siteIndex).lockTable.setReadLock(o);
+						return true;
+					}
+					else {
+						addGraphConflicts(o, siteIndex);
+						this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
+						return false;
+					}
+				}
+				//if a site is neither down nor locked, add a read lock and return true
+				else {
+					this.sites.get(siteIndex).lockTable.setReadLock(o); // sets the write lock
+					return true;
+				}
+			}
+		}
+		//even variable-read from the first available site
+		else {
+			int numSitesLocked = 0;
+			for (int i=0; i<this.sites.size(); i++) {
+				Site currentSite = this.sites.get(i);
+				//if a site is down or locked, find another site to read from
+				if (currentSite.isDown || currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
+					numSitesLocked++;
+					continue;
+				}
+				//TODO: if readlocked and lock queue is not empty
+
+
+				//if a site has been down, check if the latest commit time is after the latest down time
+				//a tx can only read from a site that recovered if it has been written to since recovery
+				else if(currentSite.wasDown) {
+					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
+					int latestDownTime = currentSite.latestDownTime;
+					if (latestDownTime<currentSite.latestCommitTime){
+						this.sites.get(i).lockTable.setReadLock(o);
+						return true;
+					}
+					else {
+						numSitesLocked++;
+						continue;
+					}
+				}
+				//if a site is neither down nor locked, add a read lock and break the loop--return true
+				else {
+					this.sites.get(i).lockTable.setReadLock(o);
+					return true;
+				}
+			}
+			//if all 10 sites are inaccessible return false
+			if (numSitesLocked==10) {
+				addGraphConflicts(o, 0);
+				this.sites.get(0).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
+				return false;
+			}
+			return true;
+		}
+
 	}
 
 	public void dump(Operation o) {

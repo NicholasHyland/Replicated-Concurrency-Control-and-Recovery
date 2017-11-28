@@ -5,9 +5,11 @@ public class Site {
 
   boolean isDown;
   boolean wasDown;
-  int wasDownTime;
+  int latestDownTime;
+  int latestCommitTime;
   int number;
   ArrayList<Variable> variables = new ArrayList<Variable>();
+  ArrayList<Update> updates = new ArrayList<Update>();
   LockTable lockTable = new LockTable();
 
 
@@ -15,6 +17,7 @@ public class Site {
     this.isDown = false;
     this.wasDown = false;
     this.number = number;
+    this.latestCommitTime=0;
 
     //initialize variables at this site
     //if this is an even numbered site
@@ -44,12 +47,12 @@ public class Site {
     this.isDown = true;
   }
 
-  public void update(Operation o) {
+  public void update(Operation o, int time) {
     for (Variable v: this.variables) {
       if (v.number == o.variableID) {
         v.setValue(o.value);
       }
     }
-
+    this.latestCommitTime=time;
   }
 }
