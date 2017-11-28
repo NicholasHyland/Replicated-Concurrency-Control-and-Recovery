@@ -1,3 +1,9 @@
+////// NON REPLICATED DATA THAT  RECOVERS IS AVAILABLE FOR READS AND WRITES
+////// REPLICATED DATA THAT RECOVERS IS ONLY AVAILABLE FOR WRITES
+////426
+////WRITE OPERATION WRITES TO CURRENTLY UP SITES
+
+
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +21,6 @@ public class TransactionManager {
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
 	HashMap<Integer, ArrayList<Integer>> graph = new HashMap<Integer, ArrayList<Integer>>(); // key is transaction ID, value is list of pointers to other transactions
-	//DataManager DM = new DataManager();
 
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
@@ -151,13 +156,13 @@ public class TransactionManager {
 					}
 				}
 				if (removeIndex) {
-					this.blockedOperations.remove(index);
+					this.blockedOperations.remove(index); 
 				}
 			}
 
 			// Process operations in first list
 			Operation currentOperation = this.operations.get(0);
-			currentOperation.printOperation(); // print operation
+			//currentOperation.printOperation(); // print operation
 			switch(currentOperation.operationType) {
 				case "begin":
 					beginTransaction(currentOperation, false);
@@ -580,6 +585,8 @@ public class TransactionManager {
 					continue;
 				}
 				//TODO: if readlocked and lock queue is not empty
+				//TODO: check non replicated vs replicated data
+				//TODO: check if site is down when calling dump
 
 
 				//if a site has been down, check if the latest commit time is after the latest down time
@@ -661,10 +668,11 @@ public class TransactionManager {
 
 	public void failSite(int s){
 		//TODO keep track of time when site failed
-		this.sites.get(s - 1).fail(); // fail this site - clear the lock table
+		this.sites.get(s - 1).fail(this.currentTime); // fail this site - clear the lock table
 	}
 
 	public void recoverSite(int s){
+		this.sites.get(s - 1).recover();
 
 	}
 }

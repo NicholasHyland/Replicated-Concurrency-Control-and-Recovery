@@ -11,6 +11,7 @@ public class Site {
   ArrayList<Variable> variables = new ArrayList<Variable>();
   ArrayList<Update> updates = new ArrayList<Update>();
   LockTable lockTable = new LockTable();
+  //DataManager DM = new DataManager();
 
 
   public Site(int number) {
@@ -42,9 +43,15 @@ public class Site {
     }
   }
 
-  public void fail() {
+  public void fail(int time) {
     this.lockTable = new LockTable(); //set lock table to be new lock table - erases previous locks
     this.isDown = true;
+    this.wasDown = true;
+    this.latestDownTime = time;
+  }
+
+  public void recover() {
+    this.isDown = false;
   }
 
   public void update(Operation o, int time) {
