@@ -1,22 +1,23 @@
-import java.util.ArrayList;
-
 //This is a class to model Transactions
 import java.util.ArrayList;
 
 public class Transaction {
 
   String name;
+  int transactionID;
   boolean isReadOnly;
-  double startTime;
+  int startTime;
   double endTime;
   boolean aborted;
-  ArrayList<Operation> operations;
-  Operation currentOperation;
+  ArrayList<Operation> writeOperations = new ArrayList<Operation>();
+ // Operation currentOperation;
 
-  public Transaction(String name, boolean isReadOnly, int t) {
+  public Transaction(String name, boolean isReadOnly, int startTime) {
       this.name = name;
+      String transaction = name.replaceAll("T", "");
+      this.transactionID = Integer.parseInt(transaction);
       this.isReadOnly = isReadOnly;
-      this.startTime = t;
+      this.startTime = startTime;
   }
 
 }

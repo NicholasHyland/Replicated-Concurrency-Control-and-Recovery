@@ -5,8 +5,7 @@ import java.util.ArrayList;
 public class Variable {
 
   int number;
-  boolean isCopy;
-  Site site;
+  int site;
   int value;
   int commitTime;
   ArrayList<Transaction> transactions;
@@ -14,11 +13,19 @@ public class Variable {
   boolean isReadLocked;
   boolean isWriteLocked;
 
-  public Variable (int number, boolean isCopy) {
+  public Variable (int number, int site) {
     this.number = number; // 10 * Integer.parseInt((name.split("x."))[0]);
     this.value = number * 10;
-    this.isCopy = isCopy; // name.contains(".");
+    this.site = site;
     this.commitTime = 0;
+  }
+
+  public void setValue(int v){
+    this.value=v;
+  }
+
+  public int getValue(){
+    return this.value;
   }
 
 }

@@ -2,20 +2,13 @@
 
 public class Lock{
 
-	boolean isRead;
-	boolean isWrite;
-	int onVariable;
+	int transactionID;
+	int startTime;
+  boolean isRead;
 
-	public Lock(String type, int variable){
-		this.onVariable = variable;
-		if(type.equals("Read")){
-			this.isRead = true;
-			this.isWrite = false;
-		}
-		else
-			if (type.equals("Write")){
-				this.isWrite = true;
-				this.isRead = false;
-			}
+	public Lock(int transactionID, int startTime, boolean isRead){
+		this.transactionID = transactionID;
+		this.startTime = startTime;
+    this.isRead = isRead;
 	}
 }
