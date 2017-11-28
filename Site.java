@@ -18,31 +18,22 @@ public class Site {
 
     //initialize variables at this site
     //if this is an even numbered site
-    if (number % 2 == 0){
+    if ((number % 2) == 0) {
       int i = 1;
-      while (i < 21){
-        //add the 2 odd variables and all even variables
-        // if it one of the 2 odd variables, then add - it is not a copy
+      while (i < 21) {
         if (((i % 10) + 1) == number) {
-          this.variables.add(new Variable(i, false, number));
+          this.variables.add(new Variable(i, number));
         }
-        // if it is an even variable, then add - not a copy if the variable number is the same as the site number
         else if ((i % 2) == 0) {
-          if (i == number) {
-            this.variables.add(new Variable(i, false, number));
-          }
-          else {
-            this.variables.add(new Variable(i, true, number));
-          }
+          this.variables.add(new Variable(i, number));
         }
         i++;
       }
     }
-    //if this is an odd numbered site add only the even variables
     else {
       int i = 2;
-      while (i < 21){
-        this.variables.add(new Variable(i, true, number)); // all variables at odd numbered sites are copies
+      while (i < 21) {
+        this.variables.add(new Variable(i, number));
         i += 2;
       }
     }
