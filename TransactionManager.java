@@ -561,9 +561,16 @@ public class TransactionManager {
 			
 		}
 
-
 		else {
-
+			for (int i=0; i<this.sites.size(); i++) {
+				Site site = this.sites.get(i);
+				for (int j=0; j<site.variables.size(); j++) {
+						Variable v = site.variables.get(j);
+						if (v.value != v.number*10)
+							System.out.println("x" + v.number + ": " + v.getValue() + " at site " + (i+1));
+				}
+			}	
+			System.out.println("All other variables have their initial values.");
 		}
 	}
 
