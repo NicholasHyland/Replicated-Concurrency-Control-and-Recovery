@@ -1,5 +1,9 @@
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.Iterator;
+import java.util.Map;
 
 public class TransactionManager {
 
@@ -36,6 +40,7 @@ public class TransactionManager {
     while (iterator.hasNext()) {
       Map.Entry pair = (Map.Entry)iterator.next();
       ArrayList<Integer> cycleCheck = detectCycle(graph, cycle, (Integer)pair.getKey());
+
       if (cycleCheck.size() > 1) {
         if (cycleCheck.get(0) == cycleCheck.get(cycleCheck.size() - 1)) {
           hasCycle = true;
@@ -198,9 +203,73 @@ public class TransactionManager {
 		}
 	}
 
+	public void addGraphConflicts(Operation o, int siteID) {
+
+		// TODO - if operation transaction already has a lock on it's variable e.g. T1(W, x1) ..... T1(R, x1)
+
+		int transactionID = o.transactionID;
+		int variableID = o.variableID;
+
+		// if writeLocks.containsKey, add pointer from o.transactionID --> writeLocks.get(o.variableID)
+		if (this.sites.get(siteID).lockTable.writeLocks.containsKey(variableID)) {
+			int conflictingTransaction = this.sites.get(siteID).lockTable.writeLocks.get(variableID);
+			if (this.graph.containsKey(transactionID)) {
+				ArrayList<Integer> edges = this.graph.get(transactionID);
+				if (!edges.contains(conflictingTransaction)) {
+					edges.add(conflictingTransaction);
+					this.graph.put(transactionID, edges);
+				}
+			}
+			else {
+				ArrayList<Integer> edge = new ArrayList<Integer>();
+				edge.add(conflictingTransaction);
+				this.graph.put(transactionID, edge);
+			}
+		}
+
+		// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
+		if (this.sites.get(siteID).lockTable.readLocks.containsKey(variableID)) {
+			ArrayList<Integer> conflictingTransactions = this.sites.get(siteID).lockTable.readLocks.get(variableID);
+			for (Integer conflictingTransaction : conflictingTransactions) {
+				if (this.graph.containsKey(transactionID)) {
+					ArrayList<Integer> edges = this.graph.get(transactionID);
+					if (!edges.contains(conflictingTransaction)) {
+						edges.add(conflictingTransaction);
+						this.graph.put(transactionID, edges);
+					}
+				}
+				else {
+					ArrayList<Integer> edge = new ArrayList<Integer>();
+					edge.add(conflictingTransaction);
+					this.graph.put(transactionID, edge);
+				}
+			}
+		}
+
+		// if LockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in LockQueue.get(o.variableID)
+		if (this.sites.get(siteID).lockTable.lockQueue.containsKey(variableID)) {
+			ArrayList<Lock> conflictingLocks = this.sites.get(siteID).lockTable.lockQueue.get(variableID);
+			for (Lock conflictingLock : conflictingLocks) {
+				int conflictingTransaction = conflictingLock.transactionID;
+				if (this.graph.containsKey(transactionID)) {
+					ArrayList<Integer> edges = this.graph.get(transactionID);
+					if (!edges.contains(conflictingTransaction)) {
+						edges.add(conflictingTransaction);
+						this.graph.put(transactionID, edges);
+					}
+				}
+				else {
+					ArrayList<Integer> edge = new ArrayList<Integer>();
+					edge.add(conflictingTransaction);
+					this.graph.put(transactionID, edge);
+				}
+			}
+		}
+	}
+
 	public void detectDeadlock() {
-		if (this.runningTransactions == 1)
-			return;
+		return;
+		//if deadlock detected, abort youngest -
 	}
 
 	public void beginTransaction(Operation operation, boolean isReadOnly){
@@ -230,7 +299,7 @@ public class TransactionManager {
 				if (site.wasDown) {
 					int t = site.wasDownTime;
 					if (op.time>t){
-						//abortTransaction(op.transactionID);
+						//abortTransaction(op.transactionID); - REMOVE LOCKS
 						System.out.println("Transaction " + op.transactionID + " is aborted at time " + this.currentTime);
 					}
 				}
@@ -246,7 +315,7 @@ public class TransactionManager {
 					if (site.wasDown) {
 						int t = site.wasDownTime;
 						if (op.time>t){
-							//abortTransaction(op.transactionID);
+							//abortTransaction(op.transactionID); - REMOVE LOCKS
 							System.out.println("Transaction " + op.transactionID + " is aborted at time " + this.currentTime);
 							siteDown=true;
 							break;
@@ -275,11 +344,8 @@ public class TransactionManager {
 			}
 			else {
 				if (currentSite.lockTable.writeLocks.containsKey(o.variableID) || currentSite.lockTable.readLocks.containsKey(o.variableID)) {
-					// if writeLocks.containsKey, add pointer from o.transactionID --> writeLocks.get(o.variableID)
-					// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
-					// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
-					// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
-					this.sites.get(siteIndex).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
+					addGraphConflicts(o, siteIndex);
+					this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, false);
 					return false;
 				}
 				else {
@@ -301,11 +367,8 @@ public class TransactionManager {
 				}
 				else {
 					if (currentSite.lockTable.writeLocks.containsKey(o.variableID) || currentSite.lockTable.readLocks.containsKey(o.variableID)) {
-						// if writeLocks.containsKey, add pointer from o.transactionID --> writeLocks.get(o.variableID)
-						// if readLocks.containsKey, add pointer from o.transactionID --> to each transactionID in readLocks.get(o.variableID)
-						// if writeLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in writeLockQueue.get(o.variableID)
-						// if readLockQueue.containsKey, add pointer from o.transactionID --> to each transactionID of lock in readLockQueue.get(o.variableID)
-						this.sites.get(i).lockTable.addWriteLockQueue(o.transactionID, o.variableID, this.currentTime);
+						addGraphConflicts(o, i);
+						this.sites.get(i).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, false);
 						siteLocked=true;
 					}
 				}

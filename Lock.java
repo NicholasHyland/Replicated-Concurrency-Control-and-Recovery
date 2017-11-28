@@ -4,9 +4,11 @@ public class Lock{
 
 	int transactionID;
 	int startTime;
+  boolean isRead;
 
-	public Lock(int transactionID, int startTime){
+	public Lock(int transactionID, int startTime, boolean isRead){
 		this.transactionID = transactionID;
 		this.startTime = startTime;
+    this.isRead = isRead;
 	}
 }
