@@ -419,29 +419,71 @@ public class TransactionManager {
 		}
 
 		ArrayList<Operation> ops = this.transactions.get(o.transactionID).writeOperations;
+
+		// ABORT TRANSACTION IF IT EVER ABORTS
+		for (Operation op : ops) {
+			if (op.variableID % 2 == 1) {
+				Site site = this.sites.get(op.variableID % 10);
+				if (site.wasDown) {
+					int t = site.latestDownTime;
+					if (op.time < t){ // FAILED AFTER - ABORT
+						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
+						return;
+					}
+				}
+			}
+			else {
+				for (Site site : this.sites) {
+					if (site.wasDown) {
+						int t = site.latestDownTime;
+						if (op.time < t){ // FAILED AFTER - ABORT
+							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
+							return;
+						}
+					}
+				}
+			}
+		}
+
+		// COMMIT OPERATIONS SINCE IT DOESN'T ABORT
 		for (Operation op : ops) {
 			if (op.variableID % 2 == 1) {
 				Site site = this.sites.get(op.variableID % 10);
 				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
 				if (site.wasDown) {
 					int t = site.latestDownTime;
-					if (op.time < t){
-						abortTransaction(op.transactionID); //- REMOVE LOCKS
+					if (op.time < t){ // FAILED AFTER - ABORT
+						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
+						break;
+					}
+					else if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
+						this.sites.get(op.variableID % 10).update(op, this.currentTime);
+						System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+					}
+					else {	// FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
+						continue;
 					}
 				}
 				else {
-					this.sites.get(op.variableID).update(op, this.currentTime);
-					System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID+ " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+					this.sites.get(op.variableID % 10).update(op, this.currentTime);
+					System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
 				}
 			}
 			else {
-				for (Site site: this.sites) {
+				for (Site site : this.sites) {
 					site.lockTable.removeWriteLock(op); // remove the write lock from that site - TODO - how about the other locks?
 					if (site.wasDown) {
 						int t = site.latestDownTime;
-						if (op.time < t){
-							abortTransaction(op.transactionID); //- REMOVE LOCKS - TODO
+						if (op.time < t){ // FAILED AFTER - ABORT
+							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
 							break;
+						}
+						else if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
+							this.sites.get(op.variableID % 10).update(op, this.currentTime);
+							System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+						}
+						else {	// FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
+							continue;
 						}
 					}
 					else {
@@ -664,7 +706,7 @@ public class TransactionManager {
 
 	public void recoverSite(int s){
 		System.out.println("Site " + s + " recovers");
-		this.sites.get(s - 1).recover();
+		this.sites.get(s - 1).recover(this.currentTime);
 
 	}
 }

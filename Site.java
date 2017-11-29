@@ -8,6 +8,7 @@ public class Site {
   int latestDownTime;
   int latestCommitTime;
   int number;
+  int latestRecoverTime;
   ArrayList<Variable> variables = new ArrayList<Variable>();
   // ArrayList<Update> updates = new ArrayList<Update>();
   LockTable lockTable = new LockTable();
@@ -50,8 +51,9 @@ public class Site {
     this.latestDownTime = time;
   }
 
-  public void recover() {
+  public void recover(int time) {
     this.isDown = false;
+    this.latestRecoverTime = time;
   }
 
   public void update(Operation o, int time) {
