@@ -1,4 +1,12 @@
 //endTransaction is not correct--op.time doesnt make sense..we're not keeping track per site..its updated at every write regardless of the site
+//found the errors..adding todos
+//TODO: rename transaction.writeOperations to transaction.pendingOperations in Transaction.java and TransactionManager.java
+//TODO: check whether operation is read or write when ending tx to remove appropriate lock
+//TODO: add read operations to transactions.pendingOperations list (tx will abort if a read transaction accessed it before it failed)
+//TODO: on lines ~522 and ~553, we add an operation to writeOperations and return true but on line ~189 we update op.time for this operation
+//so this change isn't reflected in transaction.writeOperations -- in terms of tracking per site each operation stores variable info
+//but not site info
+
 
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
