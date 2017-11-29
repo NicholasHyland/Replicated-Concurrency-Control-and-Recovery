@@ -156,7 +156,7 @@ public class TransactionManager {
 					}
 				}
 				if (removeIndex) {
-					this.blockedOperations.remove(index); 
+					this.blockedOperations.remove(index);
 				}
 			}
 
@@ -171,7 +171,7 @@ public class TransactionManager {
 					beginTransaction(currentOperation, true);
 					break;
 				case "end":
-					System.out.println("Ending a transaction at time " + this.currentTime);
+					System.out.println("Ending Transaction " + currentOperation.transactionID + " at time " + this.currentTime);
 					endTransaction(currentOperation);
 					break;
 				case "W":
@@ -447,7 +447,7 @@ public class TransactionManager {
 					}
 				}
 				if (!siteDown) {
-					for (int i=0; i<this.sites.size(); i++) {
+					for (int i = 0; i < this.sites.size(); i++) {
 						Site site = this.sites.get(i);
 						site.update(op, this.currentTime);
 						System.out.println("Transaction " + op.transactionID + " committed variable x" + op.variableID+ " at site " + (i+1) + " at time " + this.currentTime);
@@ -496,7 +496,7 @@ public class TransactionManager {
 			for (int i=0; i<this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				if (currentSite.isDown) {
-					System.out.println("Cannot write to variable x" + o.variableID + " because site " + i + 1 + " is down");
+					System.out.println("Cannot write to variable x" + o.variableID + " because site " + (i + 1) + " is down");
 					continue;
 					//return false;
 				}
@@ -543,7 +543,7 @@ public class TransactionManager {
 			int siteIndex = (o.variableID % 10);
 			Site currentSite = this.sites.get(siteIndex);
 			if (currentSite.isDown) {
-				System.out.println("Cannot read variable x" + o.variableID + " because site " + siteIndex + 1 + " is down");
+				System.out.println("Cannot read variable x" + o.variableID + " because site " + (siteIndex + 1) + " is down");
 				return false;
 			}
 			else {
@@ -557,7 +557,7 @@ public class TransactionManager {
 				else if(currentSite.wasDown) {
 					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
 					int latestDownTime = currentSite.latestDownTime;
-					if (latestDownTime<currentSite.latestCommitTime){
+					if (latestDownTime < currentSite.latestCommitTime){
 						this.sites.get(siteIndex).lockTable.setReadLock(o);
 						return true;
 					}
@@ -577,7 +577,7 @@ public class TransactionManager {
 		//even variable-read from the first available site
 		else {
 			int numSitesLocked = 0;
-			for (int i=0; i<this.sites.size(); i++) {
+			for (int i = 0; i < this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				//if a site is down or locked, find another site to read from
 				if (currentSite.isDown || currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
@@ -594,7 +594,7 @@ public class TransactionManager {
 				else if(currentSite.wasDown) {
 					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
 					int latestDownTime = currentSite.latestDownTime;
-					if (latestDownTime<currentSite.latestCommitTime){
+					if (latestDownTime < currentSite.latestCommitTime){
 						this.sites.get(i).lockTable.setReadLock(o);
 						return true;
 					}
@@ -610,7 +610,7 @@ public class TransactionManager {
 				}
 			}
 			//if all 10 sites are inaccessible return false
-			if (numSitesLocked==10) {
+			if (numSitesLocked == 10) {
 				addGraphConflicts(o, 0);
 				this.sites.get(0).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
 				return false;
@@ -624,33 +624,33 @@ public class TransactionManager {
 		System.out.println("=== output of dump");
 		if (o.dumpVariable != 0) {
 			int vID = o.dumpVariable;
-			if (vID%2 == 0){
-				for (int i=0; i<this.sites.size(); i++) {
+			if (vID % 2 == 0){
+				for (int i = 0; i < this.sites.size(); i++) {
 					Site site = this.sites.get(i);
 					//System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
-					for (int j=0; j<site.variables.size(); j++) {
+					for (int j = 0; j < site.variables.size(); j++) {
 						Variable v = site.variables.get(j);
-						if (v.number==vID)
+						if (v.number == vID)
 							System.out.println("x" + vID + ": " + v.getValue() + " at site " + (i+1));
 					}
 				}
 			}
 			else {
 				Site site = this.sites.get(vID%10);
-				for (int i=0; i<site.variables.size(); i++) {
+				for (int i = 0; i < site.variables.size(); i++) {
 					Variable v = site.variables.get(i);
-					if (v.number==vID)
+					if (v.number == vID)
 						System.out.println("x" + vID + ": " + v.getValue() + " at site " + (vID%10 +1));
 				}
 			}
-		}	
+		}
 
 		else if (o.dumpSite != 0) {
 			Site site = this.sites.get(o.dumpSite-1);
 			for (Variable v: site.variables) {
 				System.out.println("x" + v.number + ": " + v.getValue() + " at site " + o.dumpSite);
 			}
-			
+
 		}
 
 		else {
@@ -661,17 +661,19 @@ public class TransactionManager {
 						if (v.value != v.number*10)
 							System.out.println("x" + v.number + ": " + v.getValue() + " at site " + (i+1));
 				}
-			}	
+			}
 			System.out.println("All other variables have their initial values.");
 		}
 	}
 
 	public void failSite(int s){
 		//TODO keep track of time when site failed
+		System.out.println("Site " + s + " fails");
 		this.sites.get(s - 1).fail(this.currentTime); // fail this site - clear the lock table
 	}
 
 	public void recoverSite(int s){
+		System.out.println("Site " + s + " recovers");
 		this.sites.get(s - 1).recover();
 
 	}

@@ -9,7 +9,7 @@ public class Site {
   int latestCommitTime;
   int number;
   ArrayList<Variable> variables = new ArrayList<Variable>();
-  ArrayList<Update> updates = new ArrayList<Update>();
+  // ArrayList<Update> updates = new ArrayList<Update>();
   LockTable lockTable = new LockTable();
   //DataManager DM = new DataManager();
 
