@@ -165,9 +165,11 @@ public class TransactionManager {
 			//currentOperation.printOperation(); // print operation
 			switch(currentOperation.operationType) {
 				case "begin":
+					System.out.println("Transaction T" + currentOperation.transactionID + " begins");
 					beginTransaction(currentOperation, false);
 					break;
 				case "beginRO":
+					System.out.println("Read-only Transaction T" + currentOperation.transactionID + " begins");
 					beginTransaction(currentOperation, true);
 					break;
 				case "end":
@@ -602,6 +604,11 @@ public class TransactionManager {
 				//if a site is neither down nor locked, add a read lock and return true
 				else {
 					this.sites.get(siteIndex).lockTable.setReadLock(o); // sets the write lock
+					for (Variable v : this.sites.get(siteIndex).variables) {
+						if (v.number == o.variableID) {
+							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (siteIndex + 1));
+						}
+					}
 					return true;
 				}
 			}
@@ -638,6 +645,11 @@ public class TransactionManager {
 				//if a site is neither down nor locked, add a read lock and break the loop--return true
 				else {
 					this.sites.get(i).lockTable.setReadLock(o);
+					for (Variable v : this.sites.get(i).variables) {
+						if (v.number == o.variableID) {
+							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (i + 1));
+						}
+					}
 					return true;
 				}
 			}
