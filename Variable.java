@@ -20,8 +20,9 @@ public class Variable {
     this.commitTime = 0;
   }
 
-  public void setValue(int v){
+  public void setValue(int v, int time) {
     this.value=v;
+    this.commitTime=time;
   }
 
   public int getValue(){

@@ -1,9 +1,3 @@
-////// NON REPLICATED DATA THAT  RECOVERS IS AVAILABLE FOR READS AND WRITES
-////// REPLICATED DATA THAT RECOVERS IS ONLY AVAILABLE FOR WRITES
-////426
-////WRITE OPERATION WRITES TO CURRENTLY UP SITES
-
-
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,7 +19,7 @@ public class TransactionManager {
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
 		this.runningTransactions = 0;
-		this.currentTime = 0;
+		this.currentTime = 1;
 		initializeSites();
 	}
 
@@ -165,11 +159,11 @@ public class TransactionManager {
 			//currentOperation.printOperation(); // print operation
 			switch(currentOperation.operationType) {
 				case "begin":
-					System.out.println("Transaction T" + currentOperation.transactionID + " begins");
+					System.out.println("Transaction T" + currentOperation.transactionID + " begins at time " + this.currentTime);
 					beginTransaction(currentOperation, false);
 					break;
 				case "beginRO":
-					System.out.println("Read-only Transaction T" + currentOperation.transactionID + " begins");
+					System.out.println("Read-only Transaction T" + currentOperation.transactionID + " begins at time " + this.currentTime);
 					beginTransaction(currentOperation, true);
 					break;
 				case "end":
@@ -181,7 +175,7 @@ public class TransactionManager {
 					// if cannot write, put into blocked queue
 					// if true, continue, if false, put into blocked queue
 					if (!canWrite) {
-
+						System.out.println("Transaction T" + currentOperation.transactionID + " is blocked at time " + this.currentTime);
 						this.blockedOperations.add(currentOperation);
 					}
 					else {
@@ -192,6 +186,7 @@ public class TransactionManager {
 				case "R":
 					boolean canRead = read(currentOperation);
 					if (!canRead) {
+						System.out.println("Transaction T" + currentOperation.transactionID + " is blocked at time " + this.currentTime);
 						this.blockedOperations.add(currentOperation);
 					}
 					detectDeadlock(); // detect deadlock
@@ -473,7 +468,7 @@ public class TransactionManager {
 			}
 			else {
 				for (Site site : this.sites) {
-					site.lockTable.removeWriteLock(op); // remove the write lock from that site - TODO - how about the other locks?
+					site.lockTable.removeWriteLock(op); // remove the write lock from that site - TODO - how about the other locks? -- we only have write locks in ops
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
@@ -586,12 +581,15 @@ public class TransactionManager {
 					this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
 					return false;
 				}
+				//non replicated data is available for reads and writes
+				//no need to check if site was down for odd variables--data isnt replicated it's available for reads
+				/*
 				//if a site has been down, check if the latest commit time is after the latest down time
 				//a tx can only read from a site that recovered if it has been written to since recovery
 				else if(currentSite.wasDown) {
 					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
 					int latestDownTime = currentSite.latestDownTime;
-					if (latestDownTime < currentSite.latestCommitTime){
+					if (latestDownTime < currentSite.latestCommitTime(o.variableID)){
 						this.sites.get(siteIndex).lockTable.setReadLock(o);
 						return true;
 					}
@@ -600,7 +598,7 @@ public class TransactionManager {
 						this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
 						return false;
 					}
-				}
+				} */
 				//if a site is neither down nor locked, add a read lock and return true
 				else {
 					this.sites.get(siteIndex).lockTable.setReadLock(o); // sets the write lock
@@ -623,17 +621,19 @@ public class TransactionManager {
 					numSitesLocked++;
 					continue;
 				}
-				//TODO: if readlocked and lock queue is not empty
-				//TODO: check non replicated vs replicated data
-				//TODO: check if site is down when calling dump
-
+				//if readlocked and lock queue is not empty, add tx to lock queue
+				if (currentSite.lockTable.readLocks.containsKey(o.variableID) && currentSite.lockTable.lockQueue.containsKey(o.variableID)) {
+					addGraphConflicts(o, i);
+					this.sites.get(i).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
+					return false;
+				}
 
 				//if a site has been down, check if the latest commit time is after the latest down time
 				//a tx can only read from a site that recovered if it has been written to since recovery
 				else if(currentSite.wasDown) {
 					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
 					int latestDownTime = currentSite.latestDownTime;
-					if (latestDownTime < currentSite.latestCommitTime){
+					if (latestDownTime < currentSite.latestCommitTime(o.variableID)){
 						this.sites.get(i).lockTable.setReadLock(o);
 						return true;
 					}
@@ -671,6 +671,9 @@ public class TransactionManager {
 			if (vID % 2 == 0){
 				for (int i = 0; i < this.sites.size(); i++) {
 					Site site = this.sites.get(i);
+					if (site.isDown) {
+						continue;
+					}
 					//System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
 					for (int j = 0; j < site.variables.size(); j++) {
 						Variable v = site.variables.get(j);
@@ -681,6 +684,9 @@ public class TransactionManager {
 			}
 			else {
 				Site site = this.sites.get(vID%10);
+				if (site.isDown) {
+					return;
+				}
 				for (int i = 0; i < site.variables.size(); i++) {
 					Variable v = site.variables.get(i);
 					if (v.number == vID)
@@ -711,8 +717,7 @@ public class TransactionManager {
 	}
 
 	public void failSite(int s){
-		//TODO keep track of time when site failed
-		System.out.println("Site " + s + " fails");
+		System.out.println("Site " + s + " fails at time " + this.currentTime);
 		this.sites.get(s - 1).fail(this.currentTime); // fail this site - clear the lock table
 	}
 
