@@ -1,3 +1,5 @@
+//endTransaction is not correct--op.time doesnt make sense..we're not keeping track per site..its updated at every write regardless of the site
+
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -555,15 +557,34 @@ public class TransactionManager {
 	public boolean read(Operation o){
 		//if this is a read only transaction, process it and return
 		if (this.transactions.get(o.transactionID).isReadOnly) {
+			//if the variable is odd
 			if (o.variableID % 2 != 0) {
-
+				Site currentSite = this.sites.get((o.variableID%10));
+				if (currentSite.isDown)
+					return false;
+				else {
+					int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
+					return true;
+				}
 
 			}
+			//if the variable is even, read from first available site
 			else {
-
+				int numSitesDown = 0;
+				for (int i = 0; i < this.sites.size(); i++) {
+					Site currentSite = this.sites.get(i);
+					if (currentSite.isDown) {
+						numSitesDown++;
+						continue;
+					}
+					else {
+						int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
+						return true;
+					}
+				}
+				if (numSitesDown==10)
+					return false;
 			}
-			return true;
-			//this.sites.get().getLatestValue(o);
 		}
 
 
