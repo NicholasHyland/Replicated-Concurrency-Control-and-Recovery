@@ -30,6 +30,19 @@ public class LockTable {
     this.writeLocks.put(o.variableID, o.transactionID);
   }
 
+  public void setReadLock(Operation o) {
+    ArrayList<Integer> currentReadLocks;
+    if (this.readLocks.get(o.variableID) != null) {
+      currentReadLocks = readLocks.get(o.variableID);
+      currentReadLocks.add(o.transactionID);
+    }
+    else {
+      currentReadLocks = new ArrayList<Integer>();
+      currentReadLocks.add(o.transactionID);
+    }
+    this.readLocks.put(o.variableID, currentReadLocks);
+  }
+
   public void removeWriteLock(Operation o) {
     this.writeLocks.remove(o.variableID);
   }
