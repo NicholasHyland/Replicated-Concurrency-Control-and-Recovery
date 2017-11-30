@@ -94,6 +94,8 @@ public class Site {
 			return currentUpdates.get(0).value;
 		else {
 			for (int i=0; i<currentUpdates.size(); i++) {
+				if (i==(currentUpdates.size()-1))
+					return currentUpdates.get(i).value;
 				Update nextUpdate = currentUpdates.get((i+1));
 				if (nextUpdate.time<startTime)
 					continue;

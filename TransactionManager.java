@@ -1,13 +1,3 @@
-//endTransaction is not correct--op.time doesnt make sense..we're not keeping track per site..its updated at every write regardless of the site
-//found the errors..adding todos
-//TODO: rename transaction.writeOperations to transaction.pendingOperations in Transaction.java and TransactionManager.java
-//TODO: check whether operation is read or write when ending tx to remove appropriate lock
-//TODO: add read operations to transactions.pendingOperations list (tx will abort if a read transaction accessed it before it failed)
-//TODO: on lines ~522 and ~553, we add an operation to writeOperations and return true but on line ~189 we update op.time for this operation
-//so this change isn't reflected in transaction.writeOperations -- in terms of tracking per site each operation stores variable info
-//but not site info
-
-
 // This is a class to model the Transaction Manager
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -188,9 +178,9 @@ public class TransactionManager {
 						System.out.println("Transaction T" + currentOperation.transactionID + " is blocked at time " + this.currentTime);
 						this.blockedOperations.add(currentOperation);
 					}
-					else {
-						currentOperation.setTime(this.currentTime);
-					}
+					//else {
+					//	currentOperation.setTime(this.currentTime);
+					//}
 					detectDeadlock(); // detect deadlock
 					break;
 				case "R":
@@ -425,7 +415,7 @@ public class TransactionManager {
 			return;
 		}
 
-		ArrayList<Operation> ops = this.transactions.get(o.transactionID).writeOperations;
+		ArrayList<Operation> ops = this.transactions.get(o.transactionID).pendingOperations;
 
 		// ABORT TRANSACTION IF IT EVER ABORTS
 		for (Operation op : ops) {
@@ -456,7 +446,10 @@ public class TransactionManager {
 		for (Operation op : ops) {
 			if (op.variableID % 2 == 1) {
 				Site site = this.sites.get(op.variableID % 10);
-				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
+				if (op.operationType.equals("W"))
+					this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
+				else 
+					this.sites.get(op.variableID).lockTable.removeReadLock(op);
 				if (site.wasDown) {
 					int t = site.latestDownTime;
 					if (op.time < t){ // FAILED AFTER - ABORT
@@ -478,7 +471,10 @@ public class TransactionManager {
 			}
 			else {
 				for (Site site : this.sites) {
-					site.lockTable.removeWriteLock(op); // remove the write lock from that site - TODO - how about the other locks? -- we only have write locks in ops
+					if (op.operationType.equals("W"))
+						this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
+					else 
+						this.sites.get(op.variableID).lockTable.removeReadLock(op);
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
@@ -520,7 +516,8 @@ public class TransactionManager {
 				}
 				else {
 					this.sites.get(siteIndex).lockTable.setWriteLock(o); // sets the write lock
-					this.transactions.get(o.transactionID).writeOperations.add(o);
+					o.setTime(this.currentTime);
+					this.transactions.get(o.transactionID).pendingOperations.add(o);
 					System.out.println("Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (siteIndex +1));
 					return true;
 				}
@@ -551,7 +548,8 @@ public class TransactionManager {
 						System.out.println("Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (i +1));
 					}
 				}
-				this.transactions.get(o.transactionID).writeOperations.add(o);
+				o.setTime(this.currentTime);
+				this.transactions.get(o.transactionID).pendingOperations.add(o);
 				return true;
 			}
 			else {
@@ -572,6 +570,7 @@ public class TransactionManager {
 					return false;
 				else {
 					int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
+					System.out.println("Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (1+(o.variableID%10)));
 					return true;
 				}
 
@@ -587,6 +586,7 @@ public class TransactionManager {
 					}
 					else {
 						int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
+						System.out.println("Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (i+1));
 						return true;
 					}
 				}
@@ -636,6 +636,8 @@ public class TransactionManager {
 							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (siteIndex + 1));
 						}
 					}
+					o.setTime(this.currentTime);
+					this.transactions.get(o.transactionID).pendingOperations.add(o);
 					return true;
 				}
 			}
@@ -664,6 +666,8 @@ public class TransactionManager {
 					int latestDownTime = currentSite.latestDownTime;
 					if (latestDownTime < currentSite.latestCommitTime(o.variableID)){
 						this.sites.get(i).lockTable.setReadLock(o);
+						o.setTime(this.currentTime);
+						this.transactions.get(o.transactionID).pendingOperations.add(o);
 						return true;
 					}
 					else {
@@ -679,6 +683,8 @@ public class TransactionManager {
 							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (i + 1));
 						}
 					}
+					o.setTime(this.currentTime);
+					this.transactions.get(o.transactionID).pendingOperations.add(o);
 					return true;
 				}
 			}
