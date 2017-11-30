@@ -13,6 +13,7 @@ public class Operation {
   int failSite; // required for fail(i)
   int recoverSite; // required for recover(i)
   int time; //time this r/w operation accessed a site
+  int readSiteIndex; //the site that a read transaction/operation read from if its an even variable
 
   public Operation(String operationName, String operationType, String transactionName, String variableName, int value, int dumpVariable, int dumpSite, int failSite, int recoverSite) {
     this.operationName = operationName;
@@ -76,6 +77,14 @@ public class Operation {
 
   public void setTime(int t) {
     this.time = t;
+  }
+
+  public void setReadSiteIndex(int i) {
+    this.readSiteIndex = i;
+  }
+
+  public int getReadSiteIndex() {
+    return this.readSiteIndex;
   }
 
 }
