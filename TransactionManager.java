@@ -444,6 +444,8 @@ public class TransactionManager {
 
 		// COMMIT OPERATIONS SINCE IT DOESN'T ABORT
 		for (Operation op : ops) {
+			if (op.operationType.equals("R"))
+				continue;
 			if (op.variableID % 2 == 1) {
 				Site site = this.sites.get(op.variableID % 10);
 				if (op.operationType.equals("W"))
