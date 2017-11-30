@@ -9,7 +9,7 @@ public class Transaction {
   int startTime;
   double endTime;
   boolean aborted;
-  ArrayList<Operation> writeOperations = new ArrayList<Operation>();
+  ArrayList<Operation> pendingOperations = new ArrayList<Operation>();
  // Operation currentOperation;
 
   public Transaction(String name, boolean isReadOnly, int startTime) {

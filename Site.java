@@ -28,9 +28,15 @@ public class Site {
 			while (i < 21) {
 				if (((i % 10) + 1) == number) {
 					this.variables.add(new Variable(i, number));
+					ArrayList<Update> newUpdateList = new ArrayList<Update>();
+					newUpdateList.add(new Update((i*10), 0));
+					this.updates.put(i, newUpdateList);
 				}
 				else if ((i % 2) == 0) {
 					this.variables.add(new Variable(i, number));
+					ArrayList<Update> newUpdateList = new ArrayList<Update>();
+					newUpdateList.add(new Update((i*10), 0));
+					this.updates.put(i, newUpdateList);
 				}
 				i++;
 			}
@@ -39,6 +45,9 @@ public class Site {
 			int i = 2;
 			while (i < 21) {
 				this.variables.add(new Variable(i, number));
+					ArrayList<Update> newUpdateList = new ArrayList<Update>();
+					newUpdateList.add(new Update((i*10), 0));
+					this.updates.put(i, newUpdateList);
 				i += 2;
 			}
 		}
@@ -60,15 +69,38 @@ public class Site {
 		for (Variable v: this.variables) {
 			if (v.number == o.variableID) {
 				v.setValue(o.value, time);
-				//v.set();
 			}
 		}
+		ArrayList<Update> currentUpdates = this.updates.get(o.variableID);
+		currentUpdates.add(new Update(o.value, time));
+		this.updates.put(o.variableID, currentUpdates);
 	}
 
 	public int latestCommitTime(int vID) {
 		for (Variable v: this.variables) {
 			if (v.number == vID) {
 				return v.commitTime;
+			}
+		}
+		return 0;
+	}
+
+	public int getLatestValueRO(Operation o, int time) {
+		int variableID = o.variableID;
+		int startTime = time;
+
+		ArrayList<Update> currentUpdates = this.updates.get(o.variableID);
+		if (currentUpdates.size()==1)
+			return currentUpdates.get(0).value;
+		else {
+			for (int i=0; i<currentUpdates.size(); i++) {
+				if (i==(currentUpdates.size()-1))
+					return currentUpdates.get(i).value;
+				Update nextUpdate = currentUpdates.get((i+1));
+				if (nextUpdate.time<startTime)
+					continue;
+				else
+					return currentUpdates.get(i).value;
 			}
 		}
 		return 0;
