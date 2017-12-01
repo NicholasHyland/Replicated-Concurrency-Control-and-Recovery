@@ -285,13 +285,13 @@ public class TransactionManager {
 					youngest = currentTransaction;
 				}
 			}
+			System.out.println("Transaction T" + youngest + " is aborted at time " + this.currentTime);
 			abortTransaction(youngest);
 			//abortTransaction(op.transactionID); - REMOVE LOCKS
 		}
 	}
 
 	public void abortTransaction(int transactionID) {
-		System.out.println("Transaction T" + transactionID + " is aborted at time " + this.currentTime);
 
 		// Decrement running transactions
 		this.runningTransactions--;
@@ -408,7 +408,6 @@ public class TransactionManager {
 	}
 
 	public void endTransaction(Operation o){
-		this.runningTransactions--;
 		//System.out.println("Ending transaction " + o.transactionID);
 		//return if transaction is read only -- no need to commit values or check for site failure
 		if (this.transactions.get(o.transactionID).isReadOnly) {
@@ -416,7 +415,6 @@ public class TransactionManager {
 		}
 
 		ArrayList<Operation> ops = this.transactions.get(o.transactionID).pendingOperations;
-
 		// ABORT TRANSACTION IF IT EVER ABORTS
 		for (Operation op : ops) {
 			if (op.variableID % 2 == 1) {
@@ -424,6 +422,7 @@ public class TransactionManager {
 				if (site.wasDown) {
 					int t = site.latestDownTime;
 					if (op.time < t){ // FAILED AFTER - ABORT
+						System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
 						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
 						return;
 					}
@@ -434,6 +433,7 @@ public class TransactionManager {
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
+							System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
 							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
 							return;
 						}
@@ -445,7 +445,6 @@ public class TransactionManager {
 		// COMMIT OPERATIONS SINCE IT DOESN'T ABORT
 		for (Operation op : ops) {
 			if (op.operationType.equals("R")) {
-
 				this.sites.get(op.getReadSiteIndex()).lockTable.removeReadLock(op);
 				continue;
 			}
@@ -455,6 +454,7 @@ public class TransactionManager {
 				if (site.wasDown) {
 					int t = site.latestDownTime;
 					if (op.time < t){ // FAILED AFTER - ABORT
+						System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
 						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
 						break;
 					}
@@ -478,6 +478,7 @@ public class TransactionManager {
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
+							System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
 							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
 							break;
 						}
@@ -496,6 +497,7 @@ public class TransactionManager {
 				}
 			}
 		}
+		abortTransaction(o.transactionID);
 	}
 
 	// it is going to write or not write based on whether or not it has the correct locks
@@ -505,7 +507,7 @@ public class TransactionManager {
 			int siteIndex = (o.variableID % 10);
 			Site currentSite = this.sites.get(siteIndex);
 			if (currentSite.isDown) {
-				System.out.println("Cannot write to variable x" + o.variableID + " because site " + (siteIndex + 1) + " is down");
+				System.out.println("Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (siteIndex + 1) + " is down");
 				return false;
 			}
 			else {
@@ -538,7 +540,7 @@ public class TransactionManager {
 			for (int i = 0; i < this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				if (currentSite.isDown) {
-					System.out.println("Cannot write to variable x" + o.variableID + " because site " + (i + 1) + " is down");
+					System.out.println("Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (i + 1) + " is down");
 					continue;
 					//return false;
 				}
