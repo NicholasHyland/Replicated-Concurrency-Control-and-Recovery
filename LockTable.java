@@ -50,9 +50,11 @@ public class LockTable {
   public void removeReadLock(Operation o) {
     ArrayList<Integer> currentReadLocks = this.readLocks.get(o.variableID);
     ArrayList<Integer> newReadLocks = new ArrayList<Integer>();
-    for (int i: currentReadLocks){
-      if (i!=o.transactionID)
-        newReadLocks.add(i);
+    if (currentReadLocks != null) {
+      for (int i:currentReadLocks){
+        if (i!=o.transactionID)
+          newReadLocks.add(i);
+      }
     }
     this.readLocks.put(o.variableID, newReadLocks);
   }
