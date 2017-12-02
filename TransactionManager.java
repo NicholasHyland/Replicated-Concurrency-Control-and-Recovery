@@ -317,6 +317,10 @@ public class TransactionManager {
 	    		ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
 	    		ArrayList<Integer> newTransactions = new ArrayList<Integer>();
 	    		boolean remove = false;
+	    		if (transactions.size() == 0) {
+	    			iterator.remove();
+	    			continue;
+	    		}
 	    		for (int j = 0; j < transactions.size(); j++) {
 	    			if (transactionID == transactions.get(j)) {
 	    				remove = true;
@@ -473,7 +477,6 @@ public class TransactionManager {
 			}
 			else {
 				for (Site site : this.sites) {
-
 					this.sites.get(op.variableID).lockTable.removeWriteLock(op);
 					if (site.wasDown) {
 						int t = site.latestDownTime;
