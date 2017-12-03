@@ -303,7 +303,12 @@ public class TransactionManager {
 	}
 
 	/**
-	 * TODO
+	 * This method is called whenever a read or a write is called by a transaction
+	 * Transaction conflicts are incrementally added to the Transaction Managers 'graph' (wait-for graph), or are removed when a transaction is aborted or completes
+	 * It returns the cycle, or an empty list depending on whether or not there is a cycle in the graph
+	 * 		If there is no cycle, then there is no deadlock and it returns
+	 * 		If there is a cycle, it will look at all the transactions, given by their ID in the arraylist, and determine which transaction is the youngest
+	 *				Once the youngest transaction is detected, it is aborted and it's locks and conflicts are cleared
 	 */
 	public void detectDeadlock() {
 		ArrayList<Integer> cycle = detectCycleStart(this.graph);
