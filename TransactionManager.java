@@ -127,8 +127,8 @@ public class TransactionManager {
 
 	/**
 	 * Processes all the operations in a while loop until the lists operations and blockOperations are both empty.
-	 * Processes all the blockedOperations as possible first at every time interval. Then, the operations list.
-	 * During each loop, the operation is removed from the list and processed completely or added to blockedOperations.
+	 * Processes all the blockedOperations as possible first at every time interval. Then, it processes the operations list.
+	 * During each loop, the first operation is either removed from the list and processed completely or added to blockedOperations.
 	 */
 	public void simulate(){
 		while (this.operations.size() > 0 || this.blockedOperations.size() > 0) {
@@ -661,6 +661,14 @@ public class TransactionManager {
 			}
 			else {
 				if (currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
+					//if this transaction already has a write lock, read uncommitted value and dont set a read lock
+					if (currentSite.lockTable.writeLocks.get(o.variableID)==o.transactionID) {
+						int val = getUncommittedVal(o, siteIndex);
+						System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (siteIndex + 1));
+						o.setTime(this.currentTime);
+						this.transactions.get(o.transactionID).pendingOperations.add(o);
+						return true;
+					}
 					addGraphConflicts(o, siteIndex);
 					this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
 					return false;
@@ -684,7 +692,19 @@ public class TransactionManager {
 			for (int i = 0; i < this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				//if a site is down or locked, find another site to read from
-				if (currentSite.isDown || currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
+				if (currentSite.isDown) {
+					numSitesLocked++;
+					continue;
+				}
+				if (currentSite.lockTable.writeLocks.containsKey(o.variableID)) {
+					//if this transaction already has a write lock, read uncommitted value and dont set a read lock
+					if (currentSite.lockTable.writeLocks.get(o.variableID)==o.transactionID) {
+						int val = getUncommittedVal(o, i);
+						System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (i + 1));
+						o.setTime(this.currentTime);
+						this.transactions.get(o.transactionID).pendingOperations.add(o);
+						return true;
+					}
 					numSitesLocked++;
 					continue;
 				}
@@ -734,6 +754,21 @@ public class TransactionManager {
 			return true;
 		}
 
+	}
+
+	/**
+	 * Gets the latest uncommitted value from a write operation
+	 * @param  o         The operation requesting this read on a variable the transaction already has a write lock on
+	 * @param  siteIndex The site this operation is reading from
+	 * @return           The latest uncommitted value
+	 */
+	public int getUncommittedVal(Operation o, int siteIndex) {
+		for (Operation op: this.transactions.get(o.transactionID).pendingOperations) {
+			if (op.operationType.equals("W") && o.variableID==op.variableID) {
+				return op.value;
+			}
+		}
+		return 0;
 	}
 
 	/**
