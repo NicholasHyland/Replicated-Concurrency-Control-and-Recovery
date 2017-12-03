@@ -1,30 +1,41 @@
 import java.util.ArrayList;
 
-// This is a class to model Variables
+/**
+ * A class for the Variable object. Stores variable ID, the value for this variable
+ * and the latest commitTime for this variable
+ */
 
 public class Variable {
 
   int number;
-  int site;
+  //int site;
   int value;
   int commitTime;
-  ArrayList<Transaction> transactions;
-  ArrayList<Lock> lockTable;
-  boolean isReadLocked;
-  boolean isWriteLocked;
 
+  /**
+   * Variable constructor assigns the ID, initalizes the value to ID*10 and the commitTime to 0
+   * @param  number The id of this Variable
+   */
   public Variable (int number, int site) {
     this.number = number; // 10 * Integer.parseInt((name.split("x."))[0]);
     this.value = number * 10;
-    this.site = site;
     this.commitTime = 0;
   }
 
+  /**
+   * Setter for variable value
+   * @param v    value to set
+   * @param time latest commitTime
+   */
   public void setValue(int v, int time) {
     this.value=v;
     this.commitTime=time;
   }
 
+  /**
+   * Getter for value  
+   * @return the current value of this variable
+   */
   public int getValue(){
     return this.value;
   }

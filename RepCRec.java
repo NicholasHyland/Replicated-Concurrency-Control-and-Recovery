@@ -1,22 +1,37 @@
 import java.io.File;
 import java.io.FileNotFoundException;
-
 import java.util.Scanner;
 import java.util.ArrayList;
 
-
+/**
+ * Models a distirbuted database and implements available copies approach, strict two-phase locking, 
+ * multiversion concurrency control, deadlock detection, replication, and failure recovery
+ * all with in each Transaction Manager. 
+ */
 public class RepCRec {
 
+  /**
+   * Main class
+   * @param  args                  File names. These should be inside the Tests folder
+   * @throws FileNotFoundException 
+   */
   public static void main(String[] args) throws FileNotFoundException {
-    for (int i = 0; i < args.length; i++) {
+    for (int i = 0; i < args.length; i++) { //process each test by file name
       String fileName = args[i];
+      System.out.println("\nBEGIN " + fileName + "\n");
       ArrayList<Operation> operations = getOperations(fileName);
       TransactionManager transactionManager = new TransactionManager(operations);
       transactionManager.simulate();
+      System.out.println("\nEND " + fileName);
     }
   }
 
-  // Trys to open the File to return the operations
+  /**
+   * Gets the operations from the file
+   * @param  fileName              Name of the file
+   * @return                       The array list of operations from this file
+   * @throws FileNotFoundException 
+   */
   public static ArrayList<Operation> getOperations(String fileName) throws FileNotFoundException {
     ArrayList<Operation> operations = new ArrayList<Operation>();
     try {
@@ -29,19 +44,29 @@ public class RepCRec {
     return operations;
   }
 
-  // Opens the file creating a new operation each line and adding it to all list of operations
+  /**
+   * Opens the file creating a new operation each line and adding it to all list of operations
+   * @param  fileName              Name of the file
+   * @return                       The array list of operations from this file
+   * @throws FileNotFoundException 
+   */
   public static ArrayList<Operation> openFile(String fileName) throws FileNotFoundException {
     Scanner scanner = new Scanner(new File("Tests/" + fileName));
     ArrayList<Operation> operations = new ArrayList<Operation>();
     while (scanner.hasNextLine()) {
       String operationName = scanner.nextLine();
       operationName = operationName.replaceAll(" ", "");
-      Operation operation = setOperation(operationName); // still need to create this method
+      Operation operation = setOperation(operationName);
       operations.add(operation);
     }
     return operations;
   }
 
+  /**
+   * Parses each line and converts to an Operation object
+   * @param  operationName The name of the operation
+   * @return               The Operation created from this line
+   */
   public static Operation setOperation(String operationName) {
     // get arguments of operation
     int start = operationName.indexOf("(");
