@@ -7,7 +7,7 @@ import java.util.Map;
 /**
  * The Transaction Manager object.
  * Each TM keeps track of all 10 sites and processes operations from the input file on those sites.
- * Implements available copies approach, strict two-phase locking, multiversion concurrency control, 
+ * Implements available copies approach, strict two-phase locking, multiversion concurrency control,
  * deadlock detection, replication, and failure recovery.
  */
 
@@ -43,9 +43,13 @@ public class TransactionManager {
 	}
 
 	/**
-	 * TODO
-	 * @param  graph [description]
-	 * @return       [description]
+	 * This is the starter method for detecting a cycle (deadlock if there is a cycle) - called only once
+	 * It is a recursive method which calls detectCycle and traverses the graph until a cycle is detected (at which point it returns)
+	 * @param  graph This is a wait for graph. It is a hashmap with the key being a transaction, and the value being a list of transactions it waits for (points to)
+	 * @return       Returns an arraylist of integers. If there is no cycle, then the list will be empty (size 0)
+	 * 							 If there is a cycle, then it will return the cycle with the list of transactions in the cycle
+	 * 							 The first element of the cycle will be the start of the cycle, and the last element will also be the same
+	 * 							 e.g. 2 -> 4 -> 1 -> 2 (then there is a cycle starting from Transaction 2 to 4 to 1 then back to itself)
 	 */
 	public static ArrayList<Integer> detectCycleStart(HashMap<Integer, ArrayList<Integer>> graph) {
 	ArrayList<Integer> cycle = new ArrayList<Integer>();
@@ -74,11 +78,13 @@ public class TransactionManager {
   }
 
   /**
-   * TODO
-   * @param  graph       [description]
-   * @param  cycle       [description]
-   * @param  currentNode [description]
-   * @return             [description]
+   * This is the recursive method called by detectCycleStart. It calls itself, traversing the graph until a cycle is or isn't detected
+   * @param  graph       This graph is the wait-for graph, which remains the same as in detectCycleStart
+   * @param  cycle       This is the current list of transactions that have been traversed.
+   * @param  currentNode The current transaction we are on
+   * @return             Returns the current list of transactions that have been traversed
+   * 										 If a cycle is detected, that is the first transaction is the last, then it will return
+   * 										 Otherwise, it will return an empty list with -1 in it, implying there is no cycle
    */
   public static ArrayList<Integer> detectCycle(HashMap<Integer, ArrayList<Integer>> graph, ArrayList<Integer> cycle, int currentNode) {
 	// not a cycle if it contains -1
@@ -229,7 +235,7 @@ public class TransactionManager {
 	}
 
 	/**
-	 * Adds conflicts between transactions which are holding locks and transactions waiting in the lock queue 
+	 * Adds conflicts between transactions which are holding locks and transactions waiting in the lock queue
 	 * and between transactions in the lock queue themselves.
 	 * @param o      The operation which was recently processed
 	 * @param siteID The site in which this operation is processed
@@ -297,7 +303,12 @@ public class TransactionManager {
 	}
 
 	/**
-	 * TODO
+	 * This method is called whenever a read or a write is called by a transaction
+	 * Transaction conflicts are incrementally added to the Transaction Managers 'graph' (wait-for graph), or are removed when a transaction is aborted or completes
+	 * It returns the cycle, or an empty list depending on whether or not there is a cycle in the graph
+	 * 		If there is no cycle, then there is no deadlock and it returns
+	 * 		If there is a cycle, it will look at all the transactions, given by their ID in the arraylist, and determine which transaction is the youngest
+	 *				Once the youngest transaction is detected, it is aborted and it's locks and conflicts are cleared
 	 */
 	public void detectDeadlock() {
 		ArrayList<Integer> cycle = detectCycleStart(this.graph);
