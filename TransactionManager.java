@@ -1,21 +1,29 @@
-// This is a class to model the Transaction Manager
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ * The Transaction Manager object.
+ * Each TM keeps track of all 10 sites and processes operations from the input file on those sites.
+ * Implements available copies approach, strict two-phase locking, multiversion concurrency control,
+ * deadlock detection, replication, and failure recovery.
+ */
+
 public class TransactionManager {
 
 	ArrayList<Operation> operations;
 	ArrayList<Operation> blockedOperations = new ArrayList<Operation>();
 	HashMap<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
-	// ArrayList<Transaction> transactions = new ArrayList<Transaction>();
-	ArrayList<Variable> variables;
 	ArrayList<Site> sites;
 	public static int runningTransactions, currentTime;
 	HashMap<Integer, ArrayList<Integer>> graph = new HashMap<Integer, ArrayList<Integer>>(); // key is transaction ID, value is list of pointers to other transactions
 
+	/**
+	 * Constructor for the TM. Calls initializeSites.
+	 * @param  operations The list of operations from the input file
+	 */
 	public TransactionManager(ArrayList<Operation> operations){
 		this.operations = operations;
 		this.runningTransactions = 0;
@@ -23,89 +31,112 @@ public class TransactionManager {
 		initializeSites();
 	}
 
-	//initializes all 10 sites
+	/**
+	 * Initializes global list of 10 sites.
+	 */
 	public void initializeSites(){
 		ArrayList<Site> allSites = new ArrayList<Site>();
-  		for(int i = 1; i < 11; i++){
-  			allSites.add(new Site(i));
-  		}
-  		this.sites = allSites;
+		for(int i = 1; i < 11; i++){
+			allSites.add(new Site(i));
+		}
+		this.sites = allSites;
 	}
 
+	/**
+	 * This is the starter method for detecting a cycle (deadlock if there is a cycle) - called only once
+	 * It is a recursive method which calls detectCycle and traverses the graph until a cycle is detected (at which point it returns)
+	 * @param  graph This is a wait for graph. It is a hashmap with the key being a transaction, and the value being a list of transactions it waits for (points to)
+	 * @return       Returns an arraylist of integers. If there is no cycle, then the list will be empty (size 0)
+	 * 							 If there is a cycle, then it will return the cycle with the list of transactions in the cycle
+	 * 							 The first element of the cycle will be the start of the cycle, and the last element will also be the same
+	 * 							 e.g. 2 -> 4 -> 1 -> 2 (then there is a cycle starting from Transaction 2 to 4 to 1 then back to itself)
+	 */
 	public static ArrayList<Integer> detectCycleStart(HashMap<Integer, ArrayList<Integer>> graph) {
-    ArrayList<Integer> cycle = new ArrayList<Integer>();
-    Iterator iterator = graph.entrySet().iterator();
+	ArrayList<Integer> cycle = new ArrayList<Integer>();
+	Iterator iterator = graph.entrySet().iterator();
 
-    boolean hasCycle = false;
-    while (iterator.hasNext()) {
-      Map.Entry pair = (Map.Entry)iterator.next();
-      ArrayList<Integer> cycleCheck = detectCycle(graph, cycle, (Integer)pair.getKey());
+	boolean hasCycle = false;
+	while (iterator.hasNext()) {
+	  Map.Entry pair = (Map.Entry)iterator.next();
+	  ArrayList<Integer> cycleCheck = detectCycle(graph, cycle, (Integer)pair.getKey());
 
-      if (cycleCheck.size() > 1) {
-        if (cycleCheck.get(0) == cycleCheck.get(cycleCheck.size() - 1)) {
-          hasCycle = true;
-          cycle = cycleCheck;
-          break;
-        }
-      }
-    }
+	  if (cycleCheck.size() > 1) {
+		if (cycleCheck.get(0) == cycleCheck.get(cycleCheck.size() - 1)) {
+		  hasCycle = true;
+		  cycle = cycleCheck;
+		  break;
+		}
+	  }
+	}
 
-    if (hasCycle) {
-      return cycle;
-    }
-    else {
-      return new ArrayList<Integer>();
-    }
+	if (hasCycle) {
+	  return cycle;
+	}
+	else {
+	  return new ArrayList<Integer>();
+	}
   }
 
+  /**
+   * This is the recursive method called by detectCycleStart. It calls itself, traversing the graph until a cycle is or isn't detected
+   * @param  graph       This graph is the wait-for graph, which remains the same as in detectCycleStart
+   * @param  cycle       This is the current list of transactions that have been traversed.
+   * @param  currentNode The current transaction we are on
+   * @return             Returns the current list of transactions that have been traversed
+   * 										 If a cycle is detected, that is the first transaction is the last, then it will return
+   * 										 Otherwise, it will return an empty list with -1 in it, implying there is no cycle
+   */
   public static ArrayList<Integer> detectCycle(HashMap<Integer, ArrayList<Integer>> graph, ArrayList<Integer> cycle, int currentNode) {
-    // not a cycle if it contains -1
-    if (cycle.contains(-1)) {
-      return cycle;
-    }
-    // the first node is the current node - there is a cycle
-    if (cycle.size() > 1) {
-      if (cycle.get(0) == cycle.get(cycle.size() - 1)) {
-        return cycle;
-      }
-    }
-    // if the cycle contains the current node, but it is not the first node - return the subcycle of the cycle
-    if (cycle.contains(currentNode)) {
-      // System.out.println("cycle " + cycle);
-      cycle.add(currentNode);
-      int start = 0;
-      for (int i = 0; i < cycle.size(); i++) {
-        if (cycle.get(i) == currentNode) {
-          start = i;
-          break;
-        }
-      }
-      ArrayList<Integer> newCycle = new ArrayList(cycle.subList(start, cycle.size()));
-      return newCycle;
-    }
-    // the current node is not a key in the graph -  no more out edges - not a cycle, but still return current cycle
-    if (!graph.containsKey(currentNode)) {
-      cycle.add(-1);
-      return cycle;
-    }
-    else {
-    	cycle.add(currentNode);
-      ArrayList<Integer> edges = graph.get(currentNode);
-      for (Integer edge : edges) {
-        ArrayList<Integer> checkCycle = detectCycle(graph, cycle, edge);
-        if (checkCycle.size() > 1) {
-          if (checkCycle.get(0) == checkCycle.get(checkCycle.size() - 1)) {
-            return checkCycle;
-          }
-        }
-      }
-      cycle.add(-1);
-      return cycle;
-    }
+	// not a cycle if it contains -1
+	if (cycle.contains(-1)) {
+	  return cycle;
+	}
+	// the first node is the current node - there is a cycle
+	if (cycle.size() > 1) {
+	  if (cycle.get(0) == cycle.get(cycle.size() - 1)) {
+		return cycle;
+	  }
+	}
+	// if the cycle contains the current node, but it is not the first node - return the subcycle of the cycle
+	if (cycle.contains(currentNode)) {
+	  cycle.add(currentNode);
+	  int start = 0;
+	  for (int i = 0; i < cycle.size(); i++) {
+		if (cycle.get(i) == currentNode) {
+		  start = i;
+		  break;
+		}
+	  }
+	  ArrayList<Integer> newCycle = new ArrayList(cycle.subList(start, cycle.size()));
+	  return newCycle;
+	}
+	// the current node is not a key in the graph -  no more out edges - not a cycle, but still return current cycle
+	if (!graph.containsKey(currentNode)) {
+	  cycle.add(-1);
+	  return cycle;
+	}
+	else {
+		cycle.add(currentNode);
+	  ArrayList<Integer> edges = graph.get(currentNode);
+	  for (Integer edge : edges) {
+		ArrayList<Integer> checkCycle = detectCycle(graph, cycle, edge);
+		if (checkCycle.size() > 1) {
+		  if (checkCycle.get(0) == checkCycle.get(checkCycle.size() - 1)) {
+			return checkCycle;
+		  }
+		}
+	  }
+	  cycle.add(-1);
+	  return cycle;
+	}
   }
 
+	/**
+	 * Processes all the operations in a while loop until the lists operations and blockOperations are both empty.
+	 * Processes all the blockedOperations as possible first at every time interval. Then, the operations list.
+	 * During each loop, the operation is removed from the list and processed completely or added to blockedOperations.
+	 */
 	public void simulate(){
-		//Operation current;
 		while (this.operations.size() > 0 || this.blockedOperations.size() > 0) {
 			// process blocked Operations first
 			boolean leaveQueue = false;
@@ -159,34 +190,29 @@ public class TransactionManager {
 			//currentOperation.printOperation(); // print operation
 			switch(currentOperation.operationType) {
 				case "begin":
-					System.out.println("Transaction T" + currentOperation.transactionID + " begins at time " + this.currentTime);
+					System.out.println(this.currentTime + ": Transaction T" + currentOperation.transactionID + " begins");
 					beginTransaction(currentOperation, false);
 					break;
 				case "beginRO":
-					System.out.println("Read-only Transaction T" + currentOperation.transactionID + " begins at time " + this.currentTime);
+					System.out.println(this.currentTime + ": Read-only Transaction T" + currentOperation.transactionID + " begins ");
 					beginTransaction(currentOperation, true);
 					break;
 				case "end":
-					System.out.println("Ending Transaction T" + currentOperation.transactionID + " at time " + this.currentTime);
 					endTransaction(currentOperation);
 					break;
 				case "W":
 					boolean canWrite = write(currentOperation);
 					// if cannot write, put into blocked queue
-					// if true, continue, if false, put into blocked queue
 					if (!canWrite) {
-						System.out.println("Transaction T" + currentOperation.transactionID + " is blocked at time " + this.currentTime);
+						System.out.println(this.currentTime + ": Transaction T" + currentOperation.transactionID + " is blocked");
 						this.blockedOperations.add(currentOperation);
 					}
-					//else {
-					//	currentOperation.setTime(this.currentTime);
-					//}
 					detectDeadlock(); // detect deadlock
 					break;
 				case "R":
 					boolean canRead = read(currentOperation);
 					if (!canRead) {
-						System.out.println("Transaction T" + currentOperation.transactionID + " is blocked at time " + this.currentTime);
+						System.out.println(this.currentTime + ": Transaction T" + currentOperation.transactionID + " is blocked");
 						this.blockedOperations.add(currentOperation);
 					}
 					detectDeadlock(); // detect deadlock
@@ -208,9 +234,13 @@ public class TransactionManager {
 		}
 	}
 
+	/**
+	 * Adds conflicts between transactions which are holding locks and transactions waiting in the lock queue
+	 * and between transactions in the lock queue themselves.
+	 * @param o      The operation which was recently processed
+	 * @param siteID The site in which this operation is processed
+	 */
 	public void addGraphConflicts(Operation o, int siteID) {
-
-		// TODO - if operation transaction already has a lock on it's variable e.g. T1(W, x1) ..... T1(R, x1)
 
 		int transactionID = o.transactionID;
 		int variableID = o.variableID;
@@ -272,6 +302,14 @@ public class TransactionManager {
 		}
 	}
 
+	/**
+	 * This method is called whenever a read or a write is called by a transaction
+	 * Transaction conflicts are incrementally added to the Transaction Managers 'graph' (wait-for graph), or are removed when a transaction is aborted or completes
+	 * It returns the cycle, or an empty list depending on whether or not there is a cycle in the graph
+	 * 		If there is no cycle, then there is no deadlock and it returns
+	 * 		If there is a cycle, it will look at all the transactions, given by their ID in the arraylist, and determine which transaction is the youngest
+	 *				Once the youngest transaction is detected, it is aborted and it's locks and conflicts are cleared
+	 */
 	public void detectDeadlock() {
 		ArrayList<Integer> cycle = detectCycleStart(this.graph);
 		if (cycle.size() == 0) {
@@ -285,13 +323,16 @@ public class TransactionManager {
 					youngest = currentTransaction;
 				}
 			}
-			System.out.println("Transaction T" + youngest + " is aborted at time " + this.currentTime);
-			abortTransaction(youngest);
-			//abortTransaction(op.transactionID); - REMOVE LOCKS
+			System.out.println(this.currentTime + ": Transaction T" + youngest + " is aborted due to deadlock");
+			clearLocksandConflicts(youngest);
 		}
 	}
 
-	public void abortTransaction(int transactionID) {
+	/**
+	 * Drops the locks when a transaction ends or is aborted and resolves its conflicts.
+	 * @param transactionID The transaction that just ended or was aborted
+	 */
+	public void clearLocksandConflicts(int transactionID) {
 
 		// Decrement running transactions
 		this.runningTransactions--;
@@ -301,74 +342,75 @@ public class TransactionManager {
 		for (int i = 0; i < this.sites.size(); i++) {
 			Site currentSite = this.sites.get(i);
 			LockTable currentLockTable = currentSite.lockTable;
+
 			// remove from writeLocks
 			Iterator iterator = currentLockTable.writeLocks.entrySet().iterator();
-	    	while (iterator.hasNext()) {
-		      	Map.Entry pair = (Map.Entry)iterator.next();
-		      	if ((Integer)pair.getValue() == transactionID) {
-		      		iterator.remove();
-		      	}
-	    	}
+			while (iterator.hasNext()) {
+				Map.Entry pair = (Map.Entry)iterator.next();
+				if ((Integer)pair.getValue() == transactionID) {
+					iterator.remove();
+				}
+			}
 
 			// remove from readLocks
-	    	iterator = currentLockTable.readLocks.entrySet().iterator();
-	    	while (iterator.hasNext()) {
-	    		Map.Entry pair = (Map.Entry)iterator.next();
-	    		ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
-	    		ArrayList<Integer> newTransactions = new ArrayList<Integer>();
-	    		boolean remove = false;
-	    		if (transactions.size() == 0) {
-	    			iterator.remove();
-	    			continue;
-	    		}
-	    		for (int j = 0; j < transactions.size(); j++) {
-	    			if (transactionID == transactions.get(j)) {
-	    				remove = true;
-	    				continue;
-	    			}
-	    			newTransactions.add(transactions.get(j));
-	    		}
-	    		if (remove) {
-	    			if (transactions.size() == 1) {
-	    				iterator.remove();
-	    			}
-	    			else {
-	    				pair.setValue(newTransactions);
-	    			}
-	    		}
-	    	}
+			iterator = currentLockTable.readLocks.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry pair = (Map.Entry)iterator.next();
+				ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
+				ArrayList<Integer> newTransactions = new ArrayList<Integer>();
+				boolean remove = false;
+				if (transactions.size() == 0) {
+					iterator.remove();
+					continue;
+				}
+				for (int j = 0; j < transactions.size(); j++) {
+					if (transactionID == transactions.get(j)) {
+						remove = true;
+						continue;
+					}
+					newTransactions.add(transactions.get(j));
+				}
+				if (remove) {
+					if (transactions.size() == 1) {
+						iterator.remove();
+					}
+					else {
+						pair.setValue(newTransactions);
+					}
+				}
+			}
 
 			// remove from lockQueue
-	    	iterator = currentLockTable.lockQueue.entrySet().iterator();
-	    	while (iterator.hasNext()) {
-	    		Map.Entry pair = (Map.Entry)iterator.next();
-	    		ArrayList<Lock> locks = (ArrayList<Lock>)pair.getValue();
-	    		ArrayList<Lock> newLocks = new ArrayList<Lock>();
-	    		boolean remove = false;
-	    		for (int j = 0; j < locks.size(); j++) {
-	    			if (transactionID == locks.get(j).transactionID) {
-	    				remove = true;
-	    				continue;
-	    			}
-	    			newLocks.add(locks.get(j));
-	    		}
-	    		if (remove) {
-	    			if (locks.size() == 1) {
-	    				iterator.remove();
-	    			}
-	    			else {
-	    				pair.setValue(newLocks);
-	    			}
-	    		}
-	    	}
-    		// re-set the currentLockTable
+			iterator = currentLockTable.lockQueue.entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry pair = (Map.Entry)iterator.next();
+				ArrayList<Lock> locks = (ArrayList<Lock>)pair.getValue();
+				ArrayList<Lock> newLocks = new ArrayList<Lock>();
+				boolean remove = false;
+				for (int j = 0; j < locks.size(); j++) {
+					if (transactionID == locks.get(j).transactionID) {
+						remove = true;
+						continue;
+					}
+					newLocks.add(locks.get(j));
+				}
+				if (remove) {
+					if (locks.size() == 1) {
+						iterator.remove();
+					}
+					else {
+						pair.setValue(newLocks);
+					}
+				}
+			}
+			// re-set the currentLockTable
 			this.sites.get(i).lockTable = currentLockTable;
 		}
 
 		// Remove conflicts from graph
 		this.graph.remove(transactionID);
 		Iterator iterator = this.graph.entrySet().iterator();
-	    while (iterator.hasNext()) {
+		while (iterator.hasNext()) {
 			Map.Entry pair = (Map.Entry)iterator.next();
 			ArrayList<Integer> transactions = (ArrayList<Integer>)pair.getValue();
 			ArrayList<Integer> newTransactions = new ArrayList<Integer>();
@@ -401,6 +443,11 @@ public class TransactionManager {
 		return;
 	}
 
+	/**
+	 * Initializes the transaction when Operation type is begin.
+	 * @param operation  The begin operation
+	 * @param isReadOnly Boolean to check if this transaction is read only
+	 */
 	public void beginTransaction(Operation operation, boolean isReadOnly){
 		if (isReadOnly){
 			this.transactions.put(operation.transactionID, new Transaction(operation.transactionName, true, this.currentTime));
@@ -411,10 +458,14 @@ public class TransactionManager {
 		this.runningTransactions++;
 	}
 
+	/**
+	 * Ends the transaction if the operation type is end.
+	 * @param o The end operation for this transaction
+	 */
 	public void endTransaction(Operation o){
-		//System.out.println("Ending transaction " + o.transactionID);
 		//return if transaction is read only -- no need to commit values or check for site failure
 		if (this.transactions.get(o.transactionID).isReadOnly) {
+			System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " ends");
 			return;
 		}
 
@@ -426,8 +477,8 @@ public class TransactionManager {
 				if (site.wasDown) {
 					int t = site.latestDownTime;
 					if (op.time < t){ // FAILED AFTER - ABORT
-						System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
-						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
+						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because it accessed site " + ((op.variableID%10)+1) + " after it failed");
+						clearLocksandConflicts(op.transactionID);
 						return;
 					}
 				}
@@ -437,8 +488,8 @@ public class TransactionManager {
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
-							System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
-							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
+							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because it accessed site " + ((op.variableID%10)+1) + " after it failed");
+							clearLocksandConflicts(op.transactionID);
 							return;
 						}
 					}
@@ -446,71 +497,65 @@ public class TransactionManager {
 			}
 		}
 
-		// COMMIT OPERATIONS SINCE IT DOESN'T ABORT
+		System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " ends");
+		// Commit the operation since it will not abort
 		for (Operation op : ops) {
+			//if its a read operation, no need to commit values
 			if (op.operationType.equals("R")) {
-				this.sites.get(op.getReadSiteIndex()).lockTable.removeReadLock(op);
 				continue;
 			}
 			if (op.variableID % 2 == 1) {
 				Site site = this.sites.get(op.variableID % 10);
-				this.sites.get(op.variableID).lockTable.removeWriteLock(op); // remove the write lock from that site
 				if (site.wasDown) {
 					int t = site.latestDownTime;
-					if (op.time < t){ // FAILED AFTER - ABORT
-						System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
-						abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
-						break;
-					}
-					else if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
+					if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
 						this.sites.get(op.variableID % 10).update(op, this.currentTime);
-						System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
 					}
-					else {	// FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
+					else {  // FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
 						continue;
 					}
 				}
 				else {
 					this.sites.get(op.variableID % 10).update(op, this.currentTime);
-					System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+					System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
 				}
 			}
 			else {
 				for (Site site : this.sites) {
-					this.sites.get(op.variableID).lockTable.removeWriteLock(op);
 					if (site.wasDown) {
 						int t = site.latestDownTime;
-						if (op.time < t){ // FAILED AFTER - ABORT
-							System.out.println("Transaction T" + op.transactionID + " is aborted at time " + this.currentTime);
-							abortTransaction(op.transactionID); //- TODO - what if the last operation aborts, all previous operations will commit
-							break;
-						}
-						else if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
+						if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
 							this.sites.get(op.variableID % 10).update(op, this.currentTime);
-							System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (op.variableID % 10 +1) + " at time " + this.currentTime);
+							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
 						}
-						else {	// FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
+						else {  // FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
 							continue;
 						}
 					}
 					else {
 						site.update(op, this.currentTime);
-						System.out.println("Transaction T" + op.transactionID + " committed variable x" + op.variableID + " at site " + (site.number) + " at time " + this.currentTime);
+						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
 					}
 				}
 			}
 		}
-		abortTransaction(o.transactionID);
+		clearLocksandConflicts(o.transactionID);
 	}
 
-	// it is going to write or not write based on whether or not it has the correct locks
+	/**
+	 * Processes a write operation. Adds the operation into a log if it can acquire the write lock.
+	 * Otherwise, adds the operation to the lock queue.
+	 * @param  o write operation to process
+	 * @return   true if its able to write, false if not
+	 */
 	public boolean write(Operation o){
 		// odd variable - one site
 		if (o.variableID % 2 != 0) {
 			int siteIndex = (o.variableID % 10);
 			Site currentSite = this.sites.get(siteIndex);
 			if (currentSite.isDown) {
-				System.out.println("Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (siteIndex + 1) + " is down");
+				System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (siteIndex + 1) + " is down");
 				return false;
 			}
 			else {
@@ -520,7 +565,7 @@ public class TransactionManager {
 							this.sites.get(siteIndex).lockTable.setWriteLock(o); // sets the write lock
 							o.setTime(this.currentTime);
 							this.transactions.get(o.transactionID).pendingOperations.add(o);
-							System.out.println("Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (siteIndex +1));
+							System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (siteIndex +1));
 							return true;
 						}
 					}
@@ -532,7 +577,7 @@ public class TransactionManager {
 					this.sites.get(siteIndex).lockTable.setWriteLock(o); // sets the write lock
 					o.setTime(this.currentTime);
 					this.transactions.get(o.transactionID).pendingOperations.add(o);
-					System.out.println("Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (siteIndex +1));
+					System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (siteIndex +1));
 					return true;
 				}
 			}
@@ -543,9 +588,8 @@ public class TransactionManager {
 			for (int i = 0; i < this.sites.size(); i++) {
 				Site currentSite = this.sites.get(i);
 				if (currentSite.isDown) {
-					System.out.println("Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (i + 1) + " is down");
+					System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " cannot write to variable x" + o.variableID + " because site " + (i + 1) + " is down");
 					continue;
-					//return false;
 				}
 				else {
 					if (currentSite.lockTable.writeLocks.containsKey(o.variableID) || currentSite.lockTable.readLocks.containsKey(o.variableID)) {
@@ -564,7 +608,7 @@ public class TransactionManager {
 				for (int i = 0; i < this.sites.size(); i++) {
 					if (!this.sites.get(i).isDown) {
 						this.sites.get(i).lockTable.setWriteLock(o);
-						System.out.println("Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (i +1));
+						System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " obtains write lock on variable x" + o.variableID + " at site " + (i +1));
 					}
 				}
 				o.setTime(this.currentTime);
@@ -575,10 +619,13 @@ public class TransactionManager {
 				return false;
 			}
 		}
-		// write stuff if it can - return true
-		// cannot write because it doesn't have locks - return false
 	}
 
+	/**
+	 * Processes the read transaction if it can obtain the lock. Otherwise, add it to the lock queue
+	 * @param  o The read operation
+	 * @return   true if its able to read, false otherwise
+	 */
 	public boolean read(Operation o){
 		//if this is a read only transaction, process it and return
 		if (this.transactions.get(o.transactionID).isReadOnly) {
@@ -589,7 +636,7 @@ public class TransactionManager {
 					return false;
 				else {
 					int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
-					System.out.println("Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (1+(o.variableID%10)));
+					System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (1+(o.variableID%10)));
 					return true;
 				}
 
@@ -605,7 +652,7 @@ public class TransactionManager {
 					}
 					else {
 						int val = currentSite.getLatestValueRO(o, this.transactions.get(o.transactionID).startTime);
-						System.out.println("Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (i+1));
+						System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + val + " of variable x" + o.variableID + " from site " + (i+1));
 						return true;
 					}
 				}
@@ -629,30 +676,11 @@ public class TransactionManager {
 					this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
 					return false;
 				}
-				//non replicated data is available for reads and writes
-				//no need to check if site was down for odd variables--data isnt replicated it's available for reads
-				/*
-				//if a site has been down, check if the latest commit time is after the latest down time
-				//a tx can only read from a site that recovered if it has been written to since recovery
-				else if(currentSite.wasDown) {
-					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
-					int latestDownTime = currentSite.latestDownTime;
-					if (latestDownTime < currentSite.latestCommitTime(o.variableID)){
-						this.sites.get(siteIndex).lockTable.setReadLock(o);
-						return true;
-					}
-					else {
-						addGraphConflicts(o, siteIndex);
-						this.sites.get(siteIndex).lockTable.addLockQueue(o.transactionID, o.variableID, this.currentTime, true);
-						return false;
-					}
-				} */
-				//if a site is neither down nor locked, add a read lock and return true
 				else {
-					this.sites.get(siteIndex).lockTable.setReadLock(o); // sets the write lock
+					this.sites.get(siteIndex).lockTable.setReadLock(o); // sets the read lock
 					for (Variable v : this.sites.get(siteIndex).variables) {
 						if (v.number == o.variableID) {
-							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (siteIndex + 1));
+							System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (siteIndex + 1));
 						}
 					}
 					o.setTime(this.currentTime);
@@ -681,7 +709,6 @@ public class TransactionManager {
 				//if a site has been down, check if the latest commit time is after the latest down time
 				//a tx can only read from a site that recovered if it has been written to since recovery
 				else if(currentSite.wasDown) {
-					//int latestDownTime = currentSite.downTime.get(currentSite.downTime.size()-1);
 					int latestDownTime = currentSite.latestDownTime;
 					if (latestDownTime < currentSite.latestCommitTime(o.variableID)){
 						this.sites.get(i).lockTable.setReadLock(o);
@@ -700,7 +727,7 @@ public class TransactionManager {
 					this.sites.get(i).lockTable.setReadLock(o);
 					for (Variable v : this.sites.get(i).variables) {
 						if (v.number == o.variableID) {
-							System.out.println("Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (i + 1));
+							System.out.println(this.currentTime + ": Transaction T" + o.transactionID + " reads value " + v.getValue() + " of variable x" + o.variableID + " from site " + (i + 1));
 						}
 					}
 					o.setTime(this.currentTime);
@@ -720,8 +747,12 @@ public class TransactionManager {
 
 	}
 
+	/**
+	 * Prints out the state of the sites or variable
+	 * @param o dump operation
+	 */
 	public void dump(Operation o) {
-		System.out.println("=== output of dump");
+		System.out.println("\n=== output of dump");
 		if (o.dumpVariable != 0) {
 			int vID = o.dumpVariable;
 			if (vID % 2 == 0){
@@ -730,7 +761,6 @@ public class TransactionManager {
 					if (site.isDown) {
 						continue;
 					}
-					//System.out.println("x" + vID + ": " + site.variables.get(vID-1).getValue() + " at site " + (i+1));
 					for (int j = 0; j < site.variables.size(); j++) {
 						Variable v = site.variables.get(j);
 						if (v.number == vID)
@@ -772,13 +802,21 @@ public class TransactionManager {
 		}
 	}
 
+	/**
+	 * Fail a site by calling site.fail
+	 * @param s failing site ID
+	 */
 	public void failSite(int s){
-		System.out.println("Site " + s + " fails at time " + this.currentTime);
+		System.out.println(this.currentTime + ": Site " + s + " fails");
 		this.sites.get(s - 1).fail(this.currentTime); // fail this site - clear the lock table
 	}
 
+	/**
+	 * Recover a site by calling site.recover
+	 * @param s recovering site ID
+	 */
 	public void recoverSite(int s){
-		System.out.println("Site " + s + " recovers");
+		System.out.println(this.currentTime + ": Site " + s + " recovers");
 		this.sites.get(s - 1).recover(this.currentTime);
 
 	}
