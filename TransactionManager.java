@@ -241,7 +241,6 @@ public class TransactionManager {
 	 * @param siteID The site in which this operation is processed
 	 */
 	public void addGraphConflicts(Operation o, int siteID) {
-
 		int transactionID = o.transactionID;
 		int variableID = o.variableID;
 
@@ -250,7 +249,7 @@ public class TransactionManager {
 			int conflictingTransaction = this.sites.get(siteID).lockTable.writeLocks.get(variableID);
 			if (this.graph.containsKey(transactionID)) {
 				ArrayList<Integer> edges = this.graph.get(transactionID);
-				if (!edges.contains(conflictingTransaction)) {
+				if (!edges.contains(conflictingTransaction) && (conflictingTransaction != transactionID)) {
 					edges.add(conflictingTransaction);
 					this.graph.put(transactionID, edges);
 				}
@@ -258,7 +257,9 @@ public class TransactionManager {
 			else {
 				ArrayList<Integer> edge = new ArrayList<Integer>();
 				edge.add(conflictingTransaction);
-				this.graph.put(transactionID, edge);
+				if (conflictingTransaction != transactionID) {
+					this.graph.put(transactionID, edge);
+				}
 			}
 		}
 
@@ -268,7 +269,7 @@ public class TransactionManager {
 			for (Integer conflictingTransaction : conflictingTransactions) {
 				if (this.graph.containsKey(transactionID)) {
 					ArrayList<Integer> edges = this.graph.get(transactionID);
-					if (!edges.contains(conflictingTransaction)) {
+					if (!edges.contains(conflictingTransaction) && (conflictingTransaction != transactionID)) {
 						edges.add(conflictingTransaction);
 						this.graph.put(transactionID, edges);
 					}
@@ -276,7 +277,9 @@ public class TransactionManager {
 				else {
 					ArrayList<Integer> edge = new ArrayList<Integer>();
 					edge.add(conflictingTransaction);
-					this.graph.put(transactionID, edge);
+					if (conflictingTransaction != transactionID) {
+						this.graph.put(transactionID, edge);
+					}
 				}
 			}
 		}
@@ -288,7 +291,7 @@ public class TransactionManager {
 				int conflictingTransaction = conflictingLock.transactionID;
 				if (this.graph.containsKey(transactionID)) {
 					ArrayList<Integer> edges = this.graph.get(transactionID);
-					if (!edges.contains(conflictingTransaction)) {
+					if (!edges.contains(conflictingTransaction) && (conflictingTransaction != transactionID)) {
 						edges.add(conflictingTransaction);
 						this.graph.put(transactionID, edges);
 					}
@@ -296,7 +299,9 @@ public class TransactionManager {
 				else {
 					ArrayList<Integer> edge = new ArrayList<Integer>();
 					edge.add(conflictingTransaction);
-					this.graph.put(transactionID, edge);
+					if (conflictingTransaction != transactionID) {
+						this.graph.put(transactionID, edge);
+					}
 				}
 			}
 		}
