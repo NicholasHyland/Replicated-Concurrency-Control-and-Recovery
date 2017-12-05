@@ -532,7 +532,7 @@ public class TransactionManager {
 						int t = site.latestDownTime;
 						if (!site.isDown && op.time > site.latestRecoverTime) { //FAILED BEFORE AND RECOVERED BEFORE - COMMIT
 							this.sites.get(op.variableID % 10).update(op, this.currentTime);
-							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
+							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (site.number));
 						}
 						else {  // FAILED BEFORE BUT STILL DOWN (NOT RECOVERED) OR FAILED BEFORE AND RECOVERED AFTER - NO COMMIT
 							continue;
@@ -540,7 +540,7 @@ public class TransactionManager {
 					}
 					else {
 						site.update(op, this.currentTime);
-						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (op.variableID % 10 +1));
+						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " commits value " + op.value + " to variable x" + op.variableID + " at site " + (site.number));
 					}
 				}
 			}
