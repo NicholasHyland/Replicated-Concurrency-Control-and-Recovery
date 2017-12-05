@@ -482,7 +482,7 @@ public class TransactionManager {
 				if (site.wasDown) {
 					int t = site.latestDownTime;
 					if (op.time < t){ // FAILED AFTER - ABORT
-						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because it accessed site " + ((op.variableID%10)+1) + " after it failed");
+						System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because site " + ((op.variableID%10)+1) + " failed after it was accessed");
 						clearLocksandConflicts(op.transactionID);
 						return;
 					}
@@ -493,7 +493,7 @@ public class TransactionManager {
 					if (site.wasDown) {
 						int t = site.latestDownTime;
 						if (op.time < t){ // FAILED AFTER - ABORT
-							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because it accessed site " + ((op.variableID%10)+1) + " after it failed");
+							System.out.println(this.currentTime + ": Transaction T" + op.transactionID + " ends: Transaction T" + op.transactionID + " is aborted because site " + ((op.variableID%10)+1) + " failed after it was accessed");
 							clearLocksandConflicts(op.transactionID);
 							return;
 						}
