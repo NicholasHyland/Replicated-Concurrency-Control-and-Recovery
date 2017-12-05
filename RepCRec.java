@@ -4,9 +4,12 @@ import java.util.Scanner;
 import java.util.ArrayList;
 
 /**
- * Models a distirbuted database and implements available copies approach, strict two-phase locking, 
+ * The ReoCRec program models a distirbuted database and implements the available copies approach, strict two-phase locking, 
  * multiversion concurrency control, deadlock detection, replication, and failure recovery
  * all with in each Transaction Manager. 
+ *
+ * @author Palak Bhasin
+ * @author Nicholas Hyland
  */
 public class RepCRec {
 
