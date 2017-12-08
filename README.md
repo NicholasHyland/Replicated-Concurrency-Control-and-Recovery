@@ -4,8 +4,8 @@ To run inside Docker container:
 
 (Create the image and run the container)
 
-docker build -t java .
-docker run java:latest
+- docker build -t java .
+- docker run java:latest
 
 
 Otherwise:
