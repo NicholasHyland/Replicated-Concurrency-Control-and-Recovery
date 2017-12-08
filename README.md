@@ -1,5 +1,15 @@
 # Replicated-Concurrency-Control-and-Recovery
 
+To run inside Docker container:
+
+(Create the image and run the container)
+
+docker build -t java .
+docker run java:latest
+
+
+Otherwise:
+
 Compile and Run with:
 - sh run.sh
 
