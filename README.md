@@ -2,6 +2,7 @@
 
 Compile and Run with:
 - sh run.sh
+
 (This runs all the tests currently inside the Tests folder in order. Change this script if more tests are added)
 
 OR
